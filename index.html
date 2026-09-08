@@ -38,7 +38,7 @@ position:relative}
 .nums{font-size:10px;color:#e8dcc4;margin-top:3px}
 .mini{height:5px;background:#1c1826;border-radius:99px;margin-top:5px;overflow:hidden}.mini i{display:block;height:100%;background:linear-gradient(90deg,#ff8a9a,var(--hp))}
 .mini.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
-#log{height:92px;overflow:auto;padding:8px 16px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910}
+#log{height:128px;overflow:auto;padding:8px 16px;font-size:14px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910;flex:0 0 auto}
 #log p{margin:0 0 6px}#log b u{color:#ffe08a;text-decoration-color:#c45cff}
 .sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#ff7a8a}.good{color:#8ee09a}.rare{color:#ff9ae0}.skill{color:#cbb6ff}
 #choices{padding:10px 12px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:9px;background:#100c18}
@@ -189,7 +189,7 @@ const logEl=document.getElementById("log"),ch=document.getElementById("choices")
 function say(h,c){const p=document.createElement("p");if(c)p.className=c;p.innerHTML=h;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;}
 function choices(opts){
   ch.innerHTML="";
-  const iconed=opts.length<=12 && opts.every(o=>!o.input);
+  const iconed=opts.length<=12 && opts.every(o=>!o.input && !o.list) && !opts.some(o=>(o.label||"").length>18);
   ch.className=iconed?"icon":"list";
   opts.forEach(o=>{
     if(o.input){ch.className="list"; const i=document.createElement("input");i.type="text";i.placeholder=o.ph||"";ch.appendChild(i);
@@ -259,7 +259,7 @@ function boot(){
     say("<b>BLACK SPIRE</b>");
     say("Ten ranked wilds. You are the <span class='rare'>Devourer</span>.");
     choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
-      G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],expedition:[],picked:[],outing:false,roster:[],party:[],best:0,bestRank:"G"};
+      G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
       G.roster=[makeMain(G.name)];G.party=["main"];
       choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
     }}]); return;
@@ -268,11 +268,19 @@ function boot(){
 }
 function goHub(){
   if((G.expedition&&G.expedition.length)||(G.outing&&G.picked&&G.picked.length)) return extractScreen();
-  G.outing=false; G.picked=[]; G.expedition=G.expedition||[];
+  G.outing=false; G.picked=[]; G.expedition=G.expedition||[]; G.restockInn=true;
   hub();
 }
+function rollInnStock(){
+  const n=3+Math.floor(Math.random()*3);
+  const pool=CLASS_IDS.slice().sort(()=>Math.random()-0.5);
+  G.innStock=pool.slice(0,n);
+  G.restockInn=false;
+}
 function hub(){
-  G.inArea=false;G.combat=null;G.outing=false;save();setScene("hub");hud();
+  G.inArea=false;G.combat=null;G.outing=false;
+  if(G.restockInn || !G.innStock || !G.innStock.length) rollInnStock();
+  save();setScene("hub");hud();
   say("<b>Spirefoot</b>");
   say("<span class='sys'>Gold "+G.gold+" · Roster "+G.roster.length+"/10 · Codex "+mainU().codex.length+" · Best "+G.bestRank+"</span>");
   choices([
@@ -523,7 +531,7 @@ function extractScreen(){
     }};
   });
   opts.push({label:"Bring these home",icon:"🏠",fn:confirmExtract});
-  opts.push({label:"Dump all and enter",danger:true,fn:()=>{G.expedition=[];G.picked=[];G.outing=false;say("Bag emptied.");hub();}});
+  opts.push({label:"Dump all and enter",danger:true,fn:()=>{G.expedition=[];G.picked=[];G.outing=false;G.restockInn=true;say("Bag emptied.");hub();}});
   choices(opts);
 }
 function confirmExtract(){
@@ -531,19 +539,27 @@ function confirmExtract(){
   const dump=(G.expedition||[]).length-keep.length;
   keep.forEach(it=>G.stash.push(it));
   say("Stashed "+keep.length+". Dumped "+dump+".");
-  G.expedition=[]; G.picked=[]; G.outing=false; save(); hub();
+  G.expedition=[]; G.picked=[]; G.outing=false; G.restockInn=true; save(); hub();
 }
 function inn(){
-  if(G.roster.length>=10){say("Roster cap 10.");return choices([{label:"Back",fn:hub}]);}
-  choices(CLASS_IDS.map(k=>({label:CLASSES[k].name+" — 8g",fn:()=>{
-    if(G.gold<8){say("No gold.");return inn();} G.gold-=8; const h=makeHire(k); G.roster.push(h);
-    if(G.party.length<5) G.party.push(h.id); say(h.name+" the "+CLASSES[k].name+" signs."); inn();
-  }})).concat([{label:"Back",fn:hub}]));
+  if(!G.innStock||!G.innStock.length) rollInnStock();
+  const board=(G.innStock||[]).map(k=>CLASSES[k].name).join(" · ");
+  say("<b>Inn board</b> (today): "+board+" · Gold "+G.gold+" · Roster "+G.roster.length+"/10");
+  if(G.roster.length>=10){say("Roster is full.");return choices([{label:"Back",list:true,fn:hub}]);}
+  const opts=(G.innStock||[]).map(k=>({list:true,label:"Hire "+CLASSES[k].name+" — 8g",fn:()=>{
+    if(G.gold<8){say("<b>Not enough gold.</b>");return inn();}
+    G.gold-=8; const h=makeHire(k); G.roster.push(h);
+    if(G.party.length<5) G.party.push(h.id);
+    say("<b>"+h.name+"</b> the <b>"+CLASSES[k].name+"</b> signs on. Roster "+G.roster.length+"/10. Gold "+G.gold+".");
+    inn();
+  }}));
+  opts.push({label:"Back",list:true,fn:hub});
+  choices(opts);
 }
 function barracks(){
   choices(G.roster.map(u=>{
     const on=G.party.includes(u.id);
-    return {label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>{
+    return {list:true,label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>{
       if(u.main){u.row=u.row==="front"?"back":"front";return barracks();}
       if(on){if(G.party.length<=1){say("Keep someone.");return barracks();} G.party=G.party.filter(id=>id!==u.id);}
       else {if(G.party.length>=5){say("Party 5.");return barracks();} G.party.push(u.id);}
