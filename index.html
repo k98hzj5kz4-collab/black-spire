@@ -100,8 +100,37 @@ const ZONES=RANKS.map((rank,i)=>({
   theme:["iron & oaths","teeth & sap","fever-bogs","salt dead","cinder knights","obsidian choir","dust warlords","thunder courts","thin reality","the appetite"][i],
   areas:["Approach","Outer","Inner","Sanctum"],
   red:["Blood Oath Hall","Crimson Den","Scarlet Mire","Red Tide Crypt","Ruby Kiln","Carmine Mirror","Sanguine Dune","Vermilion Spire","Red Veil","Crimson Heart"][i],
-  mult:1+i*0.45
+  mult:1+i*0.75,
+  trash:[["Oath-Drone","Gate Stalker","Levy Bound","Rust Raider"],["Sapling","Fang Runner","Thornkin","Howler"],["Fen-Tick","Mire Slug","Fever Imp","Bog Raider"],["Salt Wight","Vault Crawler","Brine Shade","Drowned Levy"],["Cinder Imp","Kiln Rat","Ash Knight","Spark Drone"],["Glass Wisp","Choir Drone","Mirror Tick","Obsidian Hound"],["Dust Jackal","Bone Runner","Waste Raider","Ash Nomad"],["Stormling","Bolt Wasp","Cloud Knight","Gale Drone"],["Rift Moth","Veil Tick","Thin-Man","Echo"],["Hunger Spawn","Tooth","Codex Mite","Appetite Drone"]][i],
+  rares:[["Oathbreaker","Gilded Warden"],["Heartwood Alpha","Red Antler"],["Plague Heron","Fen Bride"],["Tide Reeve","Salt Saint"],["Kiln Widow","Cinder Duke"],["Choir Soloist","Black Mirror"],["Dust Khan","Bone Banner"],["Storm Jurist","Thunder Twin"],["Veil Heir","Name-Eater"],["First Hunger","Last Vow"]][i],
+  bosses:null
 }));
+const BOSS_STD=[
+  ["Gate Warden","Portcullis Beast","Wall Reeve","Keep Tyrant"],
+  ["Packlord","Sap Priest","Thorn Bride","Heartwood Titan"],
+  ["Fen-King","Fever Bride","Plague Heron","Fen Crown"],
+  ["Tide Priest","Brine Giant","Salt Saint","Deep Bell"],
+  ["Kiln Duke","Forge Widow","Spark Warden","Kiln Heart"],
+  ["Choir Blade","Mirror Twin","Black Soloist","Choir Crown"],
+  ["Dust Tyrant","Bone Khan","Jackal Saint","Waste Crown"],
+  ["Storm Judge","Thunder Twin","Bolt Jurist","Storm Crown"],
+  ["Veil Twin","Name-Thief","Echo Heir","Veil Crown"],
+  ["Appetite","Spire Voice","Codex Beast","Spire Heart"]
+];
+const BOSS_ALT=[
+  [["Oath Captain","Gilded Levy"],["Chain Hydra","Saint of Keys"],["Banner Beast","False Reeve"],["First Key","Oathless King"]],
+  [["Antler King","Red Hart"],["Howl Mother","Amber Alpha"],["Sap Saint","Briar Twin"],["Fang Crown","Old Root"]],
+  [["Mire Bell","Still-Heron"],["Bog Titan","Leech Saint"],["Fen Bride","Green Fever"],["Stillwater","Last Reed"]],
+  [["Crypt Duke","Drowned Choir"],["Vault Widow","Salt Colossus"],["Drowned Reeve","Tide Mirror"],["Last Tide","Bell That Drowns"]],
+  [["Cinder Paladin","Slag Saint"],["Ash Colossus","Widow of Coals"],["Slag Knight","First Ember"],["First Flame","Glass Kiln"]],
+  [["Glass Saint","Note-Eater"],["Obsidian Judge","False Reflection"],["Shard Reeve","Silent Verse"],["Silent Note","Shattered Score"]],
+  [["War-Banner","Ash Standard"],["Ash Warlord","Bone Widow"],["Banner Widow","Last Rider"],["Last Standard","Dust Crownless"]],
+  [["Sky Bailiff","Cloud Noose"],["Gale Serpent","Second Thunder"],["Cloud Reeve","Jurist of Rain"],["First Thunder","Eye-of-Storm"]],
+  [["Rift Bride","Unlisted"],["Thin King","Stolen Face"],["Rift Warden","Heir Without"],["Unnamed","Blank Crown"]],
+  [["Heart-Eater","Second Mouth"],["First Tooth","Vow Breaker"],["Last Hunger","Nameless Meal"],["Spire Heart-Twin","Final Bite"]]
+];
+ZONES.forEach((z,i)=>{z.bossStd=BOSS_STD[i]; z.bossAlt=BOSS_ALT[i];});
+
 const CLASSES={
   vanguard:{name:"Vanguard",w:{hp:3,def:3,atk:1},skills:["taunt","bash"]},
   warrior:{name:"Warrior",w:{hp:2,atk:3,def:1},skills:["cleave","power"]},
@@ -124,10 +153,21 @@ function setName(zi,cls,setn){return SET_PREFIX[setn][zi]+" "+CLASSES[cls].name;
 function setBonus(cls){
   return ({vanguard:"+12% DEF",warrior:"+12% ATK",ranger:"Mark +15%",rogue:"+8% LUK crit",monk:"Flurry +1",paladin:"Aegis mends 6%",cleric:"Mend +20%",darkmage:"Bolt +15%",bard:"Hymn +ATK",alchemist:"Vial burn"})[cls];
 }
-function makePiece(zi,cls,setn,slot,rare){
-  const z=ZONES[zi],C=CLASSES[cls],m=z.mult*(rare?1.35:1),st={};
-  Object.entries(C.w).forEach(([k,v])=>{st[k]=Math.max(1,Math.round(v*m*(slot==="weapon"||slot==="body"?1.2:0.8)));});
-  return {id:uid(),n:setName(zi,cls,setn)+" "+SLOTN[slot],slot,cls,zi,setn,set:setId(zi,cls,setn),rare:!!rare,q:rare?"Rare":"Uncommon",st,val:Math.round(4+zi*3+(rare?8:2))};
+function makePiece(zi,cls,setn,slot,q,opts){
+  opts=opts||{}; q=q||"Uncommon";
+  const qm={Uncommon:1,Rare:1.4,Epic:2.1,Legendary:3.0}[q]||1;
+  const z=ZONES[zi];
+  const C=cls==="any"?{w:{atk:2,def:1,spd:1,int:1,spr:1,hp:1}}:CLASSES[cls];
+  const m=(1+zi*0.85)*qm*(opts.red?1.35:1)*(opts.unique?1.25:1);
+  const st={};
+  Object.entries(C.w).forEach(([k,v])=>{st[k]=Math.max(1,Math.round(v*m*(slot==="weapon"||slot==="body"?1.25:0.85)));});
+  const uniq=!!opts.unique || q==="Legendary";
+  let n;
+  if(opts.red) n=(q+" "+z.rank+" Gate "+(cls==="any"?"All-Class":CLASSES[cls].name)+" "+SLOTN[slot]);
+  else if(uniq) n=(q+" Unique "+(opts.from||z.rank)+" "+SLOTN[slot]);
+  else n=setName(zi,cls,setn)+" "+SLOTN[slot];
+  const val=Math.round((6+zi*8)*qm*(opts.red?4:1)*(uniq?3:1));
+  return {id:uid(),n,slot,cls,zi,setn:uniq||opts.red?null:setn,set:(uniq||opts.red)?null:setId(zi,cls,setn),rare:q!=="Uncommon",q,uniq,any:cls==="any",st,val};
 }
 const SKILLS={
   strike:{n:"Strike",g:"Strikes",mp:0},taunt:{n:"Taunt",g:"Wards",mp:4},bash:{n:"Bash",g:"Strikes",mp:3},
@@ -258,7 +298,7 @@ function mainU(){return G.roster.find(r=>r.main);}
 function gearBonus(u){
   const add={hp:0,atk:0,def:0,spd:0,int:0,spr:0,luk:0}; const sets={};
   SLOTS.forEach(sl=>{const it=u.gear&&u.gear[sl]; if(!it)return; Object.entries(it.st||{}).forEach(([k,v])=>add[k]=(add[k]||0)+v); sets[it.set]=(sets[it.set]||0)+1;});
-  u._setOn=null; Object.entries(sets).forEach(([sid,n])=>{if(n>=5)u._setOn=sid;}); return add;
+  u._setOn=null; Object.entries(sets).forEach(([sid,n])=>{if(n>=4)u._setOn=sid;}); return add;
 }
 function stat(u,k){const b=gearBonus(u); return k==="hpMax"?u.hpMax+(b.hp||0):(u[k]||0)+(b[k]||0);}
 function hud(){
@@ -318,7 +358,7 @@ function world(){
 }
 function enterZone(zi){
   G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme); renderStage();
-  const opts=z.areas.map((a,i)=>({label:"Area "+(i+1)+": "+a,icon:"📍",fn:()=>startArea(zi,i,false)}));
+  const opts=z.areas.map((a,i)=>({list:true,label:z.rank+" area "+a+" — boss "+z.bossStd[i]+" (10% unique)",fn:()=>startArea(zi,i,false)}));
   if(Math.random()<0.12) opts.push({label:"Red Gate: "+z.red,icon:"🟥",fn:()=>startArea(zi,4,true)});
   opts.push({label:"Leave zone",fn:world});
   opts.push({label:"Return to Spirefoot",fn:goHub});
@@ -326,25 +366,47 @@ function enterZone(zi){
 }
 function startArea(zi,ai,red){
   const z=ZONES[zi]; G.inArea=true;G.area=ai;G.red=red;G.areaName=red?z.red:z.areas[ai];
-  G.waves=red?5:(2+d(3)); G.wave=0; G.setBand=red?(d(2)-1):(ai<2?0:1);
-  say((red?"<span class='rare'>RED GATE.</span> ":"")+"Entering "+G.areaName+". "+G.waves+" waves + boss.");
+  G.waves=red?5:(2+d(3)); G.wave=0; G.setBand=ai<2?0:1;
+  G.lootBudget=red?2:(1+d(2));
+  say((red?"<span class='rare'>RED GATE.</span> Guaranteed high loot. ":"")+"Zone "+z.rank+" area "+G.areaName+". "+G.waves+" waves + boss. Party loot cap "+G.lootBudget+".");
   nextWave();
 }
-function foe(name,zi,boss){
-  const m=ZONES[zi].mult*(boss?2.2:1),hp=Math.round((18+zi*8)*m);
-  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((6+zi*2)*m),def:Math.round((2+zi)*m*0.5),spd:4+zi,int:4+zi,spr:3+zi,boss:!!boss,dead:false,gauge:0,marked:0};
+function areaDiff(){
+  const ai=G.red?3:(G.area||0);
+  return ZONES[G.zone].mult * (1+ai*0.14) * (G.red?1.25:1);
+}
+function foe(name,zi,opts){
+  opts=opts||{};
+  const m=areaDiff()*(opts.boss?2.15:opts.rare?1.55:1);
+  const hp=Math.round((16+zi*9)*m);
+  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((6+zi*2.2)*m),def:Math.round((2+zi)*m*0.55),spd:4+zi+(opts.rare||opts.unique?2:0),int:4+zi,spr:3+zi,boss:!!opts.boss,rare:!!opts.rare,unique:!!opts.unique,dead:false,gauge:0,marked:0};
 }
 function pack(zi,boss){
-  if(boss) return [foe(ZONES[zi].rank+" "+["Warden","Packlord","Fen-King","Tide Priest","Kiln Duke","Choir Blade","Dust Tyrant","Storm Judge","Veil Twin","Appetite"][zi],zi,true)];
+  const z=ZONES[zi];
+  if(boss){
+    const ai=G.red?3:clamp(G.area||0,0,3);
+    const std=z.bossStd[ai];
+    const alts=z.bossAlt[ai];
+    let who=std;
+    if(Math.random()<0.10){ who=pick(alts); say("<span class='rare'>Replacement encounter.</span> "+std+" → <b>"+who+"</b>."); }
+    const unique=Math.random()<0.05;
+    if(unique) say("<span class='rare'>Unique variant of "+who+".</span>");
+    return [foe((unique?"★ ":"")+z.rank+" "+who,zi,{boss:true,unique,rare:unique})];
+  }
   const n=1+Math.min(2,Math.floor(zi/3)+1); const p=[];
-  for(let i=0;i<n;i++) p.push(foe(ZONES[zi].name.split(" ")[0]+" "+pick(["Drone","Stalker","Bound","Raider"]),zi,false));
+  for(let i=0;i<n;i++){
+    const unique=Math.random()<0.05;
+    const nm=unique?pick(z.rares):pick(z.trash);
+    p.push(foe((unique?"★ ":"")+nm,zi,{unique,rare:unique}));
+  }
   return p;
 }
 function nextWave(){ G.wave++; startFight(pack(G.zone,false),false); }
 function startFight(enemies,boss){
   G.combat={enemies,boss,devourUsed:false,taunt:null};
   living().forEach(u=>u.gauge=stat(u,"spd")); enemies.forEach(e=>e.gauge=e.spd);
-  say("<span class='hurt'>"+(boss?"BOSS · ":"Wave "+G.wave+"/"+G.waves+" · ")+enemies.map(e=>e.name).join(", ")+"</span>");
+  if(enemies.some(e=>e.rare)) say("<span class='rare'>A rare foe answers.</span>");
+  say("<span class='hurt'>"+(boss?"BOSSES · ":"Wave "+G.wave+"/"+G.waves+" · ")+enemies.map(e=>e.name).join(", ")+"</span>");
   renderStage(); atb();
 }
 function atb(){
@@ -433,11 +495,31 @@ function down(u){
   u.dead=true; say(u.main?"<span class='hurt'>Main down.</span>":"<span class='hurt'>"+u.name+" down.</span>");
 }
 function after(){ if(!G.combat)return; if(!G.combat.enemies.some(e=>e.hp>0))return winFight(); if(!living().length)return wipe(); atb(); }
+function rollQuality(force){
+  if(force) return force;
+  const r=Math.random();
+  if(r<0.006) return "Legendary";
+  if(r<0.03) return "Epic";
+  if(r<0.20) return "Rare";
+  return "Uncommon";
+}
+function partyCls(){const p=party().filter(u=>!u.main).map(u=>u.cls); return p.length?pick(p):pick(CLASS_IDS);}
 function dropLoot(){
-  const clsPool=party().filter(u=>!u.main).map(u=>u.cls);
-  const cls=clsPool.length?pick(clsPool):pick(CLASS_IDS);
-  const rare=G.red||G.combat.boss?Math.random()<0.45:Math.random()<0.18;
-  return makePiece(G.zone,cls,G.setBand,pick(SLOTS),rare);
+  const zi=G.zone, cls=partyCls();
+  const uniqFoe=G.combat&&G.combat.enemies.some(e=>e.unique);
+  if(G.red&&G.combat&&G.combat.boss){
+    const q=Math.random()<0.35?"Legendary":"Epic";
+    if(Math.random()<0.45) return makePiece(zi,"any",null,"weapon",q,{red:true,unique:true,from:G.areaName});
+    const slot=pick(["head","body","hands","acc"]);
+    return makePiece(zi,cls,null,slot,q,{red:true,unique:true,from:G.areaName});
+  }
+  if(uniqFoe && Math.random()<0.10){
+    return makePiece(zi,cls,null,pick(SLOTS),Math.random()<0.25?"Legendary":"Epic",{unique:true,from:(G.combat.enemies.find(e=>e.unique)||{}).name});
+  }
+  const q=rollQuality();
+  const setn=q==="Rare"?1:0;
+  if(q==="Uncommon"||q==="Rare") return makePiece(zi,cls,setn,pick(SLOTS),q);
+  return makePiece(zi,cls,null,pick(SLOTS),q,{unique:q==="Legendary"});
 }
 function winFight(){
   G.roster.slice().forEach(u=>{
@@ -447,11 +529,18 @@ function winFight(){
     }
   });
   if(mainU().dead||mainU().hp<=0) return rebirth();
-  const gold=5+G.zone*3+(G.combat.boss?15:0); G.gold+=gold;
-  const loot=dropLoot();
+  const gold=5+G.zone*3+(G.combat.boss?22:0)+(G.combat.enemies.some(e=>e.unique)?8:0); G.gold+=gold;
   G.expedition=G.expedition||[];
-  G.expedition.push(loot);
-  say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: <b><u>"+(loot.rare?"★ ":"")+loot.n+"</u></b>");
+  const budget=G.lootBudget||0;
+  const must=!!(G.red&&G.combat.boss);
+  const want=must || (budget>0 && (G.combat.boss || Math.random()<0.4));
+  if(want && (budget>0||must)){
+    const loot=dropLoot();
+    G.expedition.push(loot); if(budget>0) G.lootBudget=budget-1;
+    say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: <b><u>"+loot.q+" "+loot.n+"</u></b> · bag "+G.expedition.length+" · drops left "+(G.lootBudget||0));
+  } else {
+    say("<span class='good'>Clear.</span> +"+gold+"g. No drop.");
+  }
   living().forEach(u=>{
     u.xp+=6+G.zone*2;
     if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; say(u.name+" Lv"+u.lv+" (+2 pts)","good");}
@@ -537,7 +626,7 @@ function fieldEquipPick(){
   choices(party().map(u=>({label:u.name,fn:()=>fieldEquipOnto(u)})).concat([{label:"Back",fn:camp}]));
 }
 function fieldEquipOnto(u){
-  const items=(G.expedition||[]).filter(it=>u.main||it.cls===u.cls);
+  const items=(G.expedition||[]).filter(it=>u.main||it.cls==="any"||it.cls===u.cls);
   if(!items.length){say("Nothing in the bag that fits "+u.name+".");return camp();}
   choices(items.map(it=>({list:true,label:(it.rare?"★ ":"")+it.n+" · "+SLOTN[it.slot],fn:()=>inspectItem(it,u,"bag",()=>fieldEquipOnto(u))})).concat([{label:"Back",fn:camp}]));
 }
@@ -615,11 +704,17 @@ function statsMenu(){
 }
 function gearMenu(){
   say("Stash "+G.stash.length+" · Pots "+G.pots);
-  choices([{label:"Equip from stash",fn:equipFlow},{label:"Sell last item",fn:()=>{if(!G.stash.length){say("Empty.");return gearMenu();} const it=G.stash.pop(); G.gold+=it.val; hud(); say("Sold "+it.n); gearMenu();}},{label:"Back",fn:hub}]);
+  choices([{label:"Equip from stash",fn:equipFlow},{label:"Sell from stash",fn:sellMenu},{label:"Back",fn:hub}]);}
+function sellMenu(){
+  if(!G.stash.length){say("Stash empty.");return gearMenu();}
+  say("Sell which piece?");
+  choices(G.stash.map((it,i)=>({list:true,label:it.q+" "+it.n+" — "+it.val+"g",fn:()=>{
+    G.stash.splice(i,1); G.gold+=it.val; hud(); say("Sold <b><u>"+it.n+"</u></b> for "+it.val+"g."); sellMenu();
+  }})).concat([{label:"Back",fn:gearMenu}]));
 }
 function equipFlow(){choices(party().map(u=>({label:u.name+" ["+(u.main?"any":CLASSES[u.cls].name)+"]",fn:()=>equipOnto(u)})).concat([{label:"Back",fn:gearMenu}]));}
 function equipOnto(u){
-  const items=G.stash.filter(it=>u.main||it.cls===u.cls);
+  const items=G.stash.filter(it=>u.main||it.cls==="any"||it.cls===u.cls);
   if(!items.length){say("Nothing that fits.");return gearMenu();}
   choices(items.map(it=>({list:true,label:(it.rare?"★ ":"")+it.n+" · "+SLOTN[it.slot],fn:()=>inspectItem(it,u,"stash",()=>equipOnto(u))})).concat([{label:"Done",fn:gearMenu}]));
 }
