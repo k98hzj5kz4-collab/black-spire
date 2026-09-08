@@ -19,6 +19,15 @@ body[data-scene="hub"] #stage{background:radial-gradient(ellipse at 50% 0%,#5a3a
 body[data-scene="world"] #stage{background:radial-gradient(ellipse at 50% 10%,#245a4a 0%,transparent 55%),linear-gradient(#102018,#0a1210 70%,#1a2a18)}
 body[data-scene="combat"] #stage{background:radial-gradient(ellipse at 50% 0%,#6a2048 0%,transparent 50%),linear-gradient(#2a1020,#100810 65%,#3a1810)}
 body[data-scene="camp"] #stage{background:radial-gradient(ellipse at 50% 80%,#c45a20 0%,transparent 45%),linear-gradient(#1a1020,#0c0a10)}
+body[data-scene="combat"] #stage{max-height:36dvh;overflow:hidden;padding-top:6px}
+body[data-scene="combat"] .card{width:62px !important;padding:4px 3px !important}
+body[data-scene="combat"] .face{width:34px !important;height:34px !important;margin-bottom:2px}
+body[data-scene="combat"] .face svg{width:16px !important;height:16px !important}
+body[data-scene="combat"] .role{display:none !important}
+body[data-scene="combat"] .name{font-size:10px}
+body[data-scene="combat"] .rowcards{gap:6px;margin-bottom:4px}
+body[data-scene="combat"] + #log, body[data-scene="combat"] #log{height:52px}
+#log,#choices{position:relative;z-index:10}
 header{padding:12px 16px 10px;border-bottom:1px solid #4a3a22;background:linear-gradient(#1c1428,#120e1c);box-shadow:0 8px 24px #0008}
 h1{margin:0;font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f0c45a55}
 .meta{font-size:12px;color:#d7c7a0}
