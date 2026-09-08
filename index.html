@@ -7,39 +7,52 @@
 <meta name="theme-color" content="#0c0a12">
 <title>Black Spire</title>
 <style>
-:root{--bg:#0b0914;--ink:#f3eadc;--dim:#8d8396;--acc:#c45cff;--gold:#e0b44a;--hp:#d4546a;--mp:#6aa7e8;--ok:#6fbf7a;--line:#2a2436}
-*{box-sizing:border-box}html,body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#24182f 0%,#0b0914 55%);color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;height:100%}
-body{display:flex;flex-direction:column;max-width:820px;margin:0 auto;min-height:100dvh}
-header{padding:10px 14px;border-bottom:1px solid var(--line);background:rgba(12,10,20,.92);position:sticky;top:0;z-index:4}
-h1{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--acc);font-weight:700}
-.meta{font-size:12px;color:var(--dim)}
-#stage{padding:10px 12px 0;min-height:168px}
-.rowcards{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-.card{width:72px;background:#16121f;border:1px solid #3a3350;border-radius:12px;padding:6px 4px 7px;text-align:center}
-.card.foe{border-color:#6a3040;background:#1c1016}
-.card.boss{box-shadow:0 0 0 1px #e0b44a}
-.card.dead{opacity:.35;filter:grayscale(1)}
-.face{width:44px;height:44px;margin:0 auto 4px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:#2a2038}
-.card.foe .face{background:#3a1820}
-.name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini{height:4px;background:#1c1826;border-radius:3px;margin-top:4px;overflow:hidden}.mini i{display:block;height:100%;background:var(--hp)}
-.mini.mp i{background:var(--mp)}
-#log{height:88px;overflow:auto;padding:6px 14px;font-size:13px;color:#cbbfd8;border-top:1px solid var(--line);background:rgba(0,0,0,.2)}
-#log p{margin:0 0 6px}.sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#e07080}.good{color:var(--ok)}.rare{color:#ff7ad1}.skill{color:#b9a6ff}
-#choices{padding:8px 12px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap');
+:root{--bg:#07060c;--ink:#f6efe3;--dim:#9a8eaa;--acc:#d07aff;--gold:#f0c45a;--hp:#ff5d73;--mp:#5eb0ff;--ok:#6fbf7a;--line:#3a3150}
+*{box-sizing:border-box}
+html,body{margin:0;color:var(--ink);font-family:"Source Sans 3",system-ui,sans-serif;height:100%;
+background:#07060c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M0 80L80 0' stroke='%231a1428' stroke-width='1'/%3E%3C/svg%3E");
+background-color:#07060c}
+body{display:flex;flex-direction:column;max-width:860px;margin:0 auto;min-height:100dvh;background:linear-gradient(180deg,#1a1030 0%,#0a0812 28%,#07060c 100%)}
+header{padding:12px 16px 10px;border-bottom:1px solid #4a3a22;background:linear-gradient(#1c1428,#120e1c);box-shadow:0 8px 24px #0008}
+h1{margin:0;font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f0c45a55}
+.meta{font-size:12px;color:#d7c7a0}
+#stage{padding:12px 12px 4px;min-height:200px;background:
+radial-gradient(ellipse at 50% 0%,#4a1a55 0%,transparent 55%),
+linear-gradient(#1b1230, #0e0a16 70%, #3a2a18);
+position:relative}
+#stage:after{content:"";position:absolute;left:8%;right:8%;bottom:10px;height:18px;background:radial-gradient(ellipse at center,#0007,transparent 70%);pointer-events:none}
+.rowcards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;position:relative;z-index:1}
+.card{width:86px;background:linear-gradient(#2a2038,#16101f);border:1px solid #6a5a40;border-radius:14px;padding:8px 6px 8px;text-align:center;box-shadow:0 8px 16px #0007}
+.card.foe{border-color:#8a3040;background:linear-gradient(#3a1520,#1a0c10)}
+.card.boss{border-color:var(--gold);box-shadow:0 0 0 1px #f0c45a,0 0 16px #f0c45a55}
+.card.dead{opacity:.38;filter:grayscale(.8)}
+.face{width:54px;height:54px;margin:0 auto 5px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#fff3,#0000 40%),var(--c,#3a2a55);border:2px solid #d7c7a066;box-shadow:inset 0 -8px 12px #0006}
+.face svg{width:30px;height:30px}
+.name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{height:5px;background:#1c1826;border-radius:99px;margin-top:5px;overflow:hidden}.mini i{display:block;height:100%;background:linear-gradient(90deg,#ff8a9a,var(--hp))}
+.mini.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
+#log{height:92px;overflow:auto;padding:8px 16px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910}
+#log p{margin:0 0 6px}#log b u{color:#ffe08a;text-decoration-color:#c45cff}
+.sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#ff7a8a}.good{color:#8ee09a}.rare{color:#ff9ae0}.skill{color:#cbb6ff}
+#choices{padding:10px 12px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:9px;background:#100c18}
 #choices.list{grid-template-columns:1fr}
-button.opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;padding:8px 6px;border-radius:12px;border:1px solid #3a3350;background:#1a1624;color:var(--ink);font:inherit;font-size:11px;text-align:center}
-button.opt .ic{font-size:22px;line-height:1}
-button.opt:active{background:#2a2438}button.opt.danger{border-color:#6a3040}
-#choices.list button.opt{flex-direction:row;justify-content:flex-start;min-height:48px;padding:10px 12px;font-size:14px;text-align:left}
-input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:8px;border:1px solid #3a3350;background:#1a1624;color:var(--ink);font:inherit;font-size:16px}
-.barwrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.lab{font-size:10px;color:var(--dim);text-transform:uppercase}
-.bar{height:6px;background:#1c1826;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%}
-.hp i{background:var(--hp)}.mp i{background:var(--mp)}
-.zonegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.ztile{background:#16121f;border:1px solid #3a3350;border-radius:10px;padding:8px 4px;text-align:center;font-size:10px}
-.ztile b{display:block;color:var(--gold);font-size:14px}
+button.opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:78px;padding:8px 6px;border-radius:16px;border:1px solid #5a4a32;background:linear-gradient(#2a2238,#17121f);color:var(--ink);font:inherit;font-size:11px;font-weight:600;text-align:center;box-shadow:0 4px 0 #0006}
+button.opt .ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#fff4,#0000 45%),#3a2a18;border:1px solid #f0c45a66}
+button.opt .ic svg{width:20px;height:20px}
+button.opt:active{transform:translateY(2px);box-shadow:none}
+button.opt.danger{border-color:#8a3040}
+#choices.list button.opt{flex-direction:row;justify-content:flex-start;gap:10px;min-height:52px;padding:8px 12px;font-size:14px;text-align:left}
+input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:10px;border:1px solid #5a4a32;background:#1a1624;color:var(--ink);font:inherit;font-size:16px}
+.barwrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.lab{font-size:10px;letter-spacing:.12em;color:#bba888;text-transform:uppercase}
+.bar{height:8px;background:#1c1826;border-radius:99px;overflow:hidden;border:1px solid #3a3048}
+.bar i{display:block;height:100%;transition:width .25s}
+.hp i{background:linear-gradient(90deg,#ff8a9a,var(--hp))}
+.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
+.zonegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.ztile{background:linear-gradient(#2a2030,#16101c);border:1px solid #6a5a40;border-radius:12px;padding:10px 4px;text-align:center;font-size:10px;box-shadow:0 4px 8px #0005}
+.ztile b{display:block;color:var(--gold);font-family:Cinzel,serif;font-size:15px}
 </style>
 </head>
 <body>
@@ -104,24 +117,84 @@ const SKILLS={
   bolt:{n:"Dark Bolt",g:"Arcane",mp:5},drain:{n:"Drain",g:"Arcane",mp:6},hymn:{n:"Hymn",g:"Wards",mp:5},
   sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5}
 };
-const FACE={devourer:"🟣",vanguard:"🛡️",warrior:"⚔️",ranger:"🏹",rogue:"🗡️",monk:"👊",paladin:"✝️",cleric:"✨",darkmage:"🔮",bard:"🎵",alchemist:"⚗️",foe:"👹",boss:"💀"};
-const ICO={world:"🗺️",inn:"🛏️",barracks:"👥",gear:"🎒",stats:"📊",church:"⛪",shop:"🛒",codex:"📖",save:"💾",hub:"🏠",attack:"⚔️",skills:"✨",defend:"🛡️",potion:"🧪",devour:"🕳️",wave:"➡️",boss:"💀",back:"↩️",hire:"➕",sell:"💰",map:"🧭"};
+const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",foe:"#b03040",boss:"#f0c45a"};
+function svg(kind,c){
+  c=c||"#f6efe3";
+  const paths={
+    sword:`<path d="M12 2l1.2 7L20 11l-6.8 2L12 22l-1.2-9L4 11l6.8-2Z" fill="${c}"/>`,
+    shield:`<path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z" fill="${c}"/>`,
+    bow:`<path d="M5 4c7 4 7 12 0 16M5 4l14 8L5 20" fill="none" stroke="${c}" stroke-width="2"/>`,
+    dagger:`<path d="M14 3l7 7-9 9-3-3 8-8-3-3zM4 20l4-1-3-3z" fill="${c}"/>`,
+    fist:`<path d="M8 11V7a2 2 0 114 0v4m0-3a2 2 0 114 0v3m0-2a2 2 0 114 0v5c0 3-2 6-8 6s-8-2-8-6v-4a2 2 0 114 0" fill="none" stroke="${c}" stroke-width="2"/>`,
+    cross:`<path d="M10 3h4v5h5v4h-5v9h-4v-9H5V8h5z" fill="${c}"/>`,
+    star:`<path d="M12 3l2.4 6.2L21 10l-5 4.2L17.5 21 12 17.5 6.5 21 8 14.2 3 10l6.6-.8z" fill="${c}"/>`,
+    orb:`<circle cx="12" cy="12" r="7" fill="none" stroke="${c}" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="${c}"/>`,
+    note:`<path d="M10 6v10a3 3 0 11-2-2.8V8l8-2v8a3 3 0 11-2-2.8V6z" fill="${c}"/>`,
+    vial:`<path d="M9 3h6v3l2 4v9a3 3 0 01-3 3h-4a3 3 0 01-3-3V10l2-4z" fill="none" stroke="${c}" stroke-width="2"/><path d="M8 14h8" stroke="${c}" stroke-width="2"/>`,
+    skull:`<path d="M12 3a8 8 0 00-8 8c0 3 2 5 3 6v2h10v-2c1-1 3-3 3-6a8 8 0 00-8-8zM9 11h2v2H9zm4 0h2v2h-2zM9 17h6" fill="none" stroke="${c}" stroke-width="2"/>`,
+    map:`<path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2zM9 4v14M15 6v14" fill="none" stroke="${c}" stroke-width="2"/>`,
+    bed:`<path d="M3 12h18v6H3zM5 12V8h6v4M3 18v2M21 18v2" fill="none" stroke="${c}" stroke-width="2"/>`,
+    people:`<circle cx="9" cy="8" r="3" fill="${c}"/><circle cx="16" cy="9" r="2.4" fill="${c}"/><path d="M3 19c1-4 4-6 6-6s5 2 6 6M14 19c.4-2 2-4 4-4 2 0 3 1 4 4" fill="${c}"/>`,
+    bag:`<path d="M8 7h8l2 14H6L8 7zm2 0V5a2 2 0 014 0v2" fill="none" stroke="${c}" stroke-width="2"/>`,
+    bars:`<path d="M5 18V10m7 8V6m7 12v-7" stroke="${c}" stroke-width="3" fill="none"/>`,
+    church:`<path d="M12 2v4M10 4h4M6 10l6-4 6 4v10H6z" fill="none" stroke="${c}" stroke-width="2"/>`,
+    cart:`<circle cx="8" cy="19" r="2" fill="${c}"/><circle cx="18" cy="19" r="2" fill="${c}"/><path d="M3 4h3l2 10h11l2-6H8" fill="none" stroke="${c}" stroke-width="2"/>`,
+    book:`<path d="M5 5h7a4 4 0 014 4v11H9a4 4 0 00-4 4V5z" fill="none" stroke="${c}" stroke-width="2"/>`,
+    save:`<path d="M5 4h11l3 3v13H5zM8 4v5h8V4M8 13h8" fill="none" stroke="${c}" stroke-width="2"/>`,
+    home:`<path d="M3 11l9-8 9 8v10H3z" fill="none" stroke="${c}" stroke-width="2"/>`,
+    spark:`<path d="M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4" stroke="${c}" stroke-width="2"/>`,
+    potion:`<path d="M10 3h4v4l3 5a5 5 0 11-10 0l3-5z" fill="none" stroke="${c}" stroke-width="2"/>`,
+    void:`<circle cx="12" cy="12" r="8" fill="none" stroke="${c}" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="${c}"/>`,
+    next:`<path d="M5 12h12M13 6l6 6-6 6" fill="none" stroke="${c}" stroke-width="2"/>`,
+    back:`<path d="M19 12H7M11 6L5 12l6 6" fill="none" stroke="${c}" stroke-width="2"/>`,
+    pin:`<path d="M12 22s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z" fill="none" stroke="${c}" stroke-width="2"/><circle cx="12" cy="10" r="2" fill="${c}"/>`,
+    gate:`<path d="M5 21V8l7-5 7 5v13M12 21v-8" fill="none" stroke="${c}" stroke-width="2"/>`,
+    hill:`<path d="M3 18l6-8 4 5 3-4 5 7H3z" fill="${c}"/>`
+  };
+  return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">${paths[kind]||paths.star}</svg>`;
+}
+const FACEKIND={devourer:"void",vanguard:"shield",warrior:"sword",ranger:"bow",rogue:"dagger",monk:"fist",paladin:"cross",cleric:"star",darkmage:"orb",bard:"note",alchemist:"vial",foe:"skull",boss:"skull"};
+function icKind(label){
+  const L=label.toLowerCase();
+  if(L.includes("world")||L.includes("map")) return "map";
+  if(L.includes("inn")||L.includes("hire")) return "bed";
+  if(L.includes("party")||L.includes("barrack")) return "people";
+  if(L.includes("equip")||L.includes("stash")||L.includes("gear")||L.includes("bag")) return "bag";
+  if(L.includes("stat")||L.startsWith("+ ")) return "bars";
+  if(L.includes("church")) return "church";
+  if(L.includes("shop")||L.includes("potion 8")) return "cart";
+  if(L.includes("codex")) return "book";
+  if(L.includes("save")) return "save";
+  if(L.includes("attack")) return "sword";
+  if(L.includes("skill")) return "spark";
+  if(L.includes("defend")) return "shield";
+  if(L.includes("potion")) return "potion";
+  if(L.includes("devour")) return "void";
+  if(L.includes("next")||L.includes("continue")) return "next";
+  if(L.includes("boss")) return "skull";
+  if(L.includes("red gate")) return "gate";
+  if(L.includes("hub")||L.includes("spirefoot")||L.includes("home")||L.includes("bring")) return "home";
+  if(L.includes("back")||L.includes("leave")||L.includes("done")||L.includes("dump")) return "back";
+  if(L.includes("area ")||L.includes("unequip")) return "pin";
+  if(RANKS.some(r=>label.startsWith(r+" "))) return "hill";
+  return "star";
+}
 const logEl=document.getElementById("log"),ch=document.getElementById("choices"),stage=document.getElementById("stage");
 function say(h,c){const p=document.createElement("p");if(c)p.className=c;p.innerHTML=h;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;}
 function icFor(label){
   const L=label.toLowerCase();
   if(L.includes("world")||L.includes("map")) return ICO.world;
-  if(L.includes("inn")||L.includes("hire")||L.startsWith("vanguard")||CLASS_IDS.some(k=>L.includes(CLASSES[k].name.toLowerCase())&&L.includes("g"))) return ICO.hire;
+  if(L.includes("inn")||L.includes("hire")) return ICO.inn;
   if(L.includes("barrack")||L.includes("party")) return ICO.barracks;
-  if(L.includes("equip")||L.includes("stash")||L.includes("sold")||L.startsWith("★")||L.includes("weapon")||L.includes("head")) return ICO.gear;
+  if(L.includes("equip")||L.includes("stash")) return ICO.gear;
   if(L.includes("stat")||L.startsWith("+ ")) return ICO.stats;
-  if(L.includes("church")||L.includes("mend")&&L.includes("g")) return ICO.church;
+  if(L.includes("church")) return ICO.church;
   if(L.includes("shop")||L.includes("potion 8")) return ICO.shop;
   if(L.includes("codex")) return ICO.codex;
-  if(L.includes("save")||L.includes("bound")) return ICO.save;
+  if(L.includes("save")) return ICO.save;
   if(L.includes("attack")) return ICO.attack;
   if(L.includes("skill")) return ICO.skills;
-  if(L.includes("defend")||L.includes("guard")) return ICO.defend;
+  if(L.includes("defend")) return ICO.defend;
   if(L.includes("potion")) return ICO.potion;
   if(L.includes("devour")) return ICO.devour;
   if(L.includes("next wave")) return ICO.wave;
@@ -129,27 +202,26 @@ function icFor(label){
   if(L.includes("red gate")) return "🟥";
   if(L.includes("hub")||L.includes("spirefoot")||L.includes("wake")||L.includes("leave")||L.includes("done")||L.includes("back")) return ICO.back;
   if(L.includes("area ")) return "📍";
-  if(/^[gfedcbas+]+\s/.test(label.toLowerCase())||RANKS.some(r=>label.startsWith(r+" "))) return "⛰️";
+  if(RANKS.some(r=>label.startsWith(r+" "))) return "⛰️";
   return "▪️";
 }
 function choices(opts){
   ch.innerHTML="";
-  const iconed=opts.length<=12 && opts.every(o=>!o.input) && opts.length!==1;
+  const iconed=opts.length<=12 && opts.every(o=>!o.input);
   ch.className=iconed?"icon":"list";
   opts.forEach(o=>{
     if(o.input){ch.className="list"; const i=document.createElement("input");i.type="text";i.placeholder=o.ph||"";ch.appendChild(i);
       const b=document.createElement("button");b.className="opt";b.innerHTML="<span class='ic'>✏️</span><span>"+o.label+"</span>";b.onclick=()=>o.fn(i.value.trim());ch.appendChild(b);return;}
     const b=document.createElement("button");b.className="opt"+(o.danger?" danger":"");
-    b.innerHTML="<span class='ic'>"+(o.icon||icFor(o.label))+"</span><span>"+o.label+"</span>";
+    b.innerHTML="<span class='ic'>"+svg(typeof o.icon==="string"&&o.icon.length<4?icKind(o.label):icKind(o.label),"#f0c45a")+"</span><span>"+o.label+"</span>";
     b.onclick=o.fn;ch.appendChild(b);
   });
 }
 function unitCard(u,foe){
-  const cls=u.main?"devourer":(u.cls||"foe");
-  const face=foe?(u.boss?FACE.boss:FACE.foe):(FACE[cls]||"🙂");
+  const cls=foe?(u.boss?"boss":"foe"):(u.main?"devourer":(u.cls||"foe"));
   const hp=Math.max(0,u.hp), max=foe?u.hpMax:stat(u,"hpMax");
   return `<div class="card ${foe?"foe":""} ${u.boss?"boss":""} ${u.dead||hp<=0?"dead":""}">
-    <div class="face">${face}</div>
+    <div class="face" style="--c:${CLSCOL[cls]||'#3a2a55'}">${svg(FACEKIND[cls]||"star","#fff8e8")}</div>
     <div class="name">${u.name}</div>
     <div class="mini"><i style="width:${max?100*hp/max:0}%"></i></div>
     ${foe?"":'<div class="mini mp"><i style="width:'+(u.mpMax?100*u.mp/u.mpMax:0)+'%"></i></div>'}
@@ -175,7 +247,7 @@ function makeMain(name){return Object.assign({id:"main",name,main:true,cls:"devo
 function makeHire(cls){
   const C=CLASSES[cls],s=base();
   Object.entries(C.w).forEach(([k,v])=>{if(k==="hp"){s.hp=s.hpMax=22+v*3;}else s[k]=(s[k]||0)+v*2;});
-  return Object.assign({id:uid(),name:pick(NAMES[cls]),cls,main:false,lv:1,xp:0,row:"front",skills:C.skills.slice(),gear:{},dead:false,gauge:0},s);
+  return Object.assign({id:uid(),name:pick(NAMES[cls]),cls,main:false,lv:1,xp:0,unspent:0,row:"front",skills:C.skills.slice(),gear:{},dead:false,gauge:0},s);
 }
 function party(){return G.party.map(id=>G.roster.find(r=>r.id===id)).filter(Boolean);}
 function living(){return party().filter(u=>!u.dead&&u.hp>0);}
@@ -199,36 +271,45 @@ function boot(){
   G=load();
   if(!G||!G.roster){
     say("<b>BLACK SPIRE</b>");
-    say("Ten ranked wilds. You are the <span class='rare'>Devourer</span>. Hires wear class sets. You wear anything — and eat what dies.");
+    say("Ten ranked wilds. You are the <span class='rare'>Devourer</span>.");
     choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
-      G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],roster:[],party:[],best:0,bestRank:"G"};
+      G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],expedition:[],picked:[],outing:false,roster:[],party:[],best:0,bestRank:"G"};
       G.roster=[makeMain(G.name)];G.party=["main"];
       choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
     }}]); return;
   }
   say("Spirefoot. "+G.name+" of "+G.guild+".","sys"); hub();
 }
+function goHub(){
+  if((G.expedition&&G.expedition.length)||(G.outing&&G.picked&&G.picked.length)) return extractScreen();
+  G.outing=false; G.picked=[]; G.expedition=G.expedition||[];
+  hub();
+}
 function hub(){
-  G.inArea=false;G.combat=null;save();hud();
+  G.inArea=false;G.combat=null;G.outing=false;save();hud();
   say("<b>Spirefoot</b>");
   say("<span class='sys'>Gold "+G.gold+" · Roster "+G.roster.length+"/10 · Codex "+mainU().codex.length+" · Best "+G.bestRank+"</span>");
   choices([
-    {label:"World map (G → S++)",fn:world},{label:"Inn — hire",fn:inn},{label:"Barracks — party of 5",fn:barracks},
-    {label:"Equip / stash",fn:gearMenu},{label:"Stats",fn:statsMenu},{label:"Church",fn:church},{label:"Shop",fn:shop},
-    {label:"Codex",fn:codex},{label:"Save",fn:()=>{save();say("Bound.");hub();}}
+    {label:"World",icon:"🗺️",fn:world},{label:"Inn",icon:"🛏️",fn:inn},{label:"Party",icon:"👥",fn:barracks},
+    {label:"Gear",icon:"🎒",fn:gearMenu},{label:"Stats",icon:"📊",fn:statsMenu},{label:"Church",icon:"⛪",fn:church},
+    {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Save",icon:"💾",fn:()=>{save();say("Bound.");hub();}}
   ]);
 }
 function world(){
-  say("Tap a rank tile. 4 areas, waves + boss. Red Gates appear at random.");
+  G.outing=true;
+  if(!G.expedition) G.expedition=[];
+  say("Tap a rank. Bag is unlimited out here. Only 3 pieces come home.");
   renderStage(`<div class="zonegrid">${ZONES.map(z=>`<div class="ztile"><b>${z.rank}</b>${z.name.split(" ")[0]}</div>`).join("")}</div>`);
-  const opts=ZONES.map(z=>({label:z.rank+"  "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)}));
-  opts.push({label:"Hub",fn:hub}); choices(opts);
+  const opts=ZONES.map(z=>({label:z.rank+" "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)}));
+  opts.push({label:"Return to Spirefoot",fn:goHub}); choices(opts);
 }
 function enterZone(zi){
-  G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme);
-  const opts=z.areas.map((a,i)=>({label:"Area "+(i+1)+": "+a+" (Set "+(i<2?"I":"II")+")",fn:()=>startArea(zi,i,false)}));
-  if(Math.random()<0.12) opts.push({label:"★ Red Gate: "+z.red,fn:()=>startArea(zi,4,true)});
-  opts.push({label:"Leave zone",fn:world}); choices(opts);
+  G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme); renderStage();
+  const opts=z.areas.map((a,i)=>({label:"Area "+(i+1)+": "+a,icon:"📍",fn:()=>startArea(zi,i,false)}));
+  if(Math.random()<0.12) opts.push({label:"Red Gate: "+z.red,icon:"🟥",fn:()=>startArea(zi,4,true)});
+  opts.push({label:"Leave zone",fn:world});
+  opts.push({label:"Return to Spirefoot",fn:goHub});
+  choices(opts);
 }
 function startArea(zi,ai,red){
   const z=ZONES[zi]; G.inArea=true;G.area=ai;G.red=red;G.areaName=red?z.red:z.areas[ai];
@@ -276,7 +357,7 @@ function ally(u){
 function sk(u){
   const opts=u.skills.filter(s=>SKILLS[s]).map(s=>{
     const S=SKILLS[s];
-    return {label:S.n+" · "+S.g+" · "+S.mp+" MP",fn:()=>{
+    return {label:S.n+" · "+S.mp+" MP",fn:()=>{
       if(u.mp<S.mp){say("No MP.");return ally(u);}
       if(s==="mend") return choices(living().map(t=>({label:"Mend "+t.name,fn:()=>act(u,s,t)})).concat([{label:"Back",fn:()=>ally(u)}]));
       if(["taunt","ward","hymn","aegis","mist","veil"].includes(s)) return act(u,s,null);
@@ -354,25 +435,33 @@ function winFight(){
   });
   if(mainU().dead||mainU().hp<=0) return rebirth();
   const gold=5+G.zone*3+(G.combat.boss?15:0); G.gold+=gold;
-  const loot=dropLoot(); G.stash.push(loot);
-  say("<span class='good'>Clear.</span> +"+gold+"g. "+(loot.rare?"<span class='rare'>Rare</span> ":"")+loot.n);
-  living().forEach(u=>{u.xp+=6+G.zone*2; if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; if(u.main)u.unspent+=2; say(u.name+" Lv"+u.lv,"good");}});
+  const loot=dropLoot();
+  G.expedition=G.expedition||[];
+  G.expedition.push(loot);
+  say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: <b><u>"+(loot.rare?"★ ":"")+loot.n+"</u></b>");
+  living().forEach(u=>{
+    u.xp+=6+G.zone*2;
+    if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; say(u.name+" Lv"+u.lv+" (+2 pts)","good");}
+  });
   const wasBoss=G.combat.boss; G.combat=null; save(); hud();
-  if(!wasBoss && G.wave<G.waves) choices([{label:"Next wave",fn:nextWave}]);
-  else if(!wasBoss && G.wave>=G.waves) choices([{label:"Boss of "+G.areaName,fn:()=>startFight(pack(G.zone,true),true)}]);
-  else areaClear();
+  G._afterCamp=()=>{
+    if(!wasBoss && G.wave<G.waves) nextWave();
+    else if(!wasBoss && G.wave>=G.waves) startFight(pack(G.zone,true),true);
+    else areaClear();
+  };
+  camp();
 }
 function areaClear(){
   G.inArea=false; const z=ZONES[G.zone]; if(G.zone>G.best){G.best=G.zone;G.bestRank=z.rank;}
   say("<span class='good'>"+G.areaName+" falls.</span>");
-  choices([{label:"Another area in "+z.name,fn:()=>enterZone(G.zone)},{label:"World map",fn:world},{label:"Spirefoot",fn:hub}]);
+  choices([{label:"Another area in "+z.name,fn:()=>enterZone(G.zone)},{label:"World map",fn:world},{label:"Return to Spirefoot",fn:goHub}]);
 }
 function wipe(){
   say("<span class='hurt'>Wipe. Limp home.</span>"); G.inArea=false;G.combat=null;
   G.roster=G.roster.filter(u=>u.main||(u.hp>0&&!u.dead));
   G.party=G.party.filter(id=>G.roster.some(r=>r.id===id));
   if(mainU().dead||mainU().hp<=0) return rebirth();
-  mainU().hp=Math.max(1,Math.floor(stat(mainU(),"hpMax")*0.3)); save(); hub();
+  mainU().hp=Math.max(1,Math.floor(stat(mainU(),"hpMax")*0.3)); save(); goHub();
 }
 function rebirth(){
   say("Rebirth Lv1. Codex stays.");
@@ -383,9 +472,82 @@ function rebirth(){
   G.roster.unshift(m); G.party=G.party.filter(id=>id!=="main"); G.party.unshift("main");
   G.inArea=false;G.combat=null; save(); choices([{label:"Wake in Spirefoot",fn:hub}]);
 }
+function camp(){
+  hud();
+  say("<b>Camp.</b> Bag "+(G.expedition||[]).length+" · spend points, swap gear, then press on.");
+  choices([
+    {label:"Spend points",icon:"📊",fn:campStatsPick},
+    {label:"Equip bag",icon:"🎒",fn:()=>fieldEquipPick()},
+    {label:"Unequip",icon:"📤",fn:fieldUnequipPick},
+    {label:"Continue",icon:"➡️",fn:()=>(G._afterCamp||areaClear)()}
+  ]);
+}
+function campStatsPick(){
+  const ready=party().filter(u=>u.unspent>0);
+  if(!ready.length){say("No unspent points.");return camp();}
+  choices(ready.map(u=>({label:u.name+" · "+u.unspent+" pts",fn:()=>spendOn(u,campStatsPick)})).concat([{label:"Back",fn:camp}]));
+}
+function spendOn(u,back){
+  if(u.unspent<=0){say(u.name+" done.");return back();}
+  say(u.name+" unspent "+u.unspent);
+  const keys=[["hpMax","HP"],["mpMax","MP"],["atk","ATK"],["def","DEF"],["spd","SPD"],["int","INT"],["spr","SPR"],["luk","LUK"]];
+  choices(keys.map(([k,l])=>({label:"+ "+l+" ("+u[k]+")",fn:()=>{
+    u[k]+=k.includes("Max")?4:1; if(k==="hpMax")u.hp=stat(u,"hpMax"); if(k==="mpMax")u.mp=u.mpMax; u.unspent--; spendOn(u,back);
+  }})).concat([{label:"Back",fn:back}]));
+}
+function fieldEquipPick(){
+  choices(party().map(u=>({label:u.name,fn:()=>fieldEquipOnto(u)})).concat([{label:"Back",fn:camp}]));
+}
+function fieldEquipOnto(u){
+  const items=(G.expedition||[]).filter(it=>u.main||it.cls===u.cls);
+  if(!items.length){say("Nothing in the bag that fits "+u.name+".");return camp();}
+  choices(items.map(it=>({label:(it.rare?"★ ":"")+it.n,fn:()=>{
+    const idx=G.expedition.indexOf(it);
+    if(u.gear[it.slot]) G.expedition.push(u.gear[it.slot]);
+    u.gear[it.slot]=it;
+    if(idx>=0) G.expedition.splice(idx,1);
+    gearBonus(u);
+    say("Equipped <b><u>"+it.n+"</u></b> on "+u.name+".");
+    fieldEquipOnto(u);
+  }})).concat([{label:"Back",fn:camp}]));
+}
+function fieldUnequipPick(){
+  const slots=[];
+  party().forEach(u=>SLOTS.forEach(sl=>{if(u.gear&&u.gear[sl]) slots.push({u,sl,it:u.gear[sl]});}));
+  if(!slots.length){say("Nothing equipped.");return camp();}
+  choices(slots.map(x=>({label:x.u.name+" · "+x.it.n,fn:()=>{
+    G.expedition.push(x.it); delete x.u.gear[x.sl]; say("Unequipped "+x.it.n); fieldUnequipPick();
+  }})).concat([{label:"Back",fn:camp}]));
+}
+function extractScreen(){
+  G.picked=G.picked||[];
+  const bag=G.expedition||[];
+  say("<b>Gate of Spirefoot.</b> Choose <b>3</b> finds to keep. Rest is dumped. Picked "+G.picked.length+"/3. Bag "+bag.length+".");
+  const opts=bag.map(it=>{
+    const on=G.picked.includes(it.id);
+    return {label:(on?"✓ ":"○ ")+(it.rare?"★ ":"")+it.n,fn:()=>{
+      if(on) G.picked=G.picked.filter(id=>id!==it.id);
+      else {
+        if(G.picked.length>=3){say("Already 3. Untick one first.");return extractScreen();}
+        G.picked.push(it.id);
+      }
+      extractScreen();
+    }};
+  });
+  opts.push({label:"Bring these home",icon:"🏠",fn:confirmExtract});
+  opts.push({label:"Dump all and enter",danger:true,fn:()=>{G.expedition=[];G.picked=[];G.outing=false;say("Bag emptied.");hub();}});
+  choices(opts);
+}
+function confirmExtract(){
+  const keep=(G.expedition||[]).filter(it=>G.picked.includes(it.id));
+  const dump=(G.expedition||[]).length-keep.length;
+  keep.forEach(it=>G.stash.push(it));
+  say("Stashed "+keep.length+". Dumped "+dump+".");
+  G.expedition=[]; G.picked=[]; G.outing=false; save(); hub();
+}
 function inn(){
   if(G.roster.length>=10){say("Roster cap 10.");return choices([{label:"Back",fn:hub}]);}
-  choices(CLASS_IDS.map(k=>({label:CLASSES[k].name+" — 8g",fn:()=>{
+  choices(CLASS_IDS.map(k=>({label:CLASSES[k].name+" — 8g",icon:FACE[k],fn:()=>{
     if(G.gold<8){say("No gold.");return inn();} G.gold-=8; const h=makeHire(k); G.roster.push(h);
     if(G.party.length<5) G.party.push(h.id); say(h.name+" the "+CLASSES[k].name+" signs."); inn();
   }})).concat([{label:"Back",fn:hub}]));
@@ -393,7 +555,7 @@ function inn(){
 function barracks(){
   choices(G.roster.map(u=>{
     const on=G.party.includes(u.id);
-    return {label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>{
+    return {label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,icon:FACE[u.main?"devourer":u.cls],fn:()=>{
       if(u.main){u.row=u.row==="front"?"back":"front";return barracks();}
       if(on){if(G.party.length<=1){say("Keep someone.");return barracks();} G.party=G.party.filter(id=>id!==u.id);}
       else {if(G.party.length>=5){say("Party 5.");return barracks();} G.party.push(u.id);}
