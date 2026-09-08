@@ -576,10 +576,11 @@ function rebirth(){
 }
 function camp(){
   setScene("camp"); hud();
-  say("<b>Camp.</b> Bag "+(G.expedition||[]).length+" · spend points, swap gear, then press on.");
+  say("<b>Camp.</b> Bag "+(G.expedition||[]).length+" · review loot, worn gear, then press on.");
   choices([
+    {label:"Review loot",icon:"🎒",fn:reviewLoot},
+    {label:"Worn gear",icon:"🛡️",fn:()=>wornMenu(camp)},
     {label:"Spend points",icon:"📊",fn:campStatsPick},
-    {label:"Equip bag",icon:"🎒",fn:()=>fieldEquipPick()},
     {label:"Unequip",icon:"📤",fn:fieldUnequipPick},
     {label:"Continue",icon:"➡️",fn:()=>(G._afterCamp||areaClear)()}
   ]);
@@ -601,12 +602,43 @@ function statLine(st){
   if(!st) return "no stats";
   return Object.entries(st).map(([k,v])=>k.toUpperCase()+" +" +v).join("  ");
 }
+function deltaLine(nw,old){
+  const keys=new Set([...Object.keys(nw||{}),...Object.keys(old||{})]);
+  const bits=[];
+  keys.forEach(k=>{
+    const d=(nw[k]||0)-(old[k]||0);
+    if(!d) return;
+    bits.push(k.toUpperCase()+" "+(d>0?"+"+d:d));
+  });
+  return bits.length?bits.join("  "):"same stats";
+}
+function printWorn(u){
+  say("<b>"+u.name+"</b> ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] set "+(u._setOn?"ON ("+setBonus(u.cls||"warrior")+")":"off"));
+  SLOTS.forEach(sl=>{
+    const it=u.gear&&u.gear[sl];
+    if(it) say(SLOTN[sl]+": <b><u>"+it.q+" "+it.n+"</u></b> — "+statLine(it.st));
+    else say(SLOTN[sl]+": empty");
+  });
+}
+function wornMenu(back){
+  back=back||hub;
+  say("Worn gear.");
+  choices(party().map(u=>({list:true,label:u.name+" worn",fn:()=>{gearBonus(u);printWorn(u);choices([{label:"Back",fn:()=>wornMenu(back)}]);}})).concat([{label:"Back",fn:back}]));
+}
+function reviewLoot(){
+  const bag=G.expedition||[];
+  if(!bag.length){say("Bag is empty.");return camp();}
+  say("New loot this outing ("+bag.length+"). Tap to compare.");
+  choices(bag.map(it=>({list:true,label:it.q+" "+it.n+" · "+SLOTN[it.slot],fn:()=>{
+    choices(party().filter(u=>u.main||it.cls==="any"||it.cls===u.cls).map(u=>({list:true,label:"Compare on "+u.name,fn:()=>inspectItem(it,u,"bag",reviewLoot)})).concat([{label:"Back",fn:reviewLoot}]));
+  }})).concat([{label:"Back",fn:camp}]));
+}
 function inspectItem(it,u,bag,back){
   const worn=u.gear&&u.gear[it.slot];
-  say("<b><u>"+(it.rare?"★ ":"")+it.n+"</u></b>");
-  say((it.q||"")+" · "+SLOTN[it.slot]+" · "+(CLASSES[it.cls]?CLASSES[it.cls].name:it.cls));
+  say("<b><u>"+(it.q?it.q+" ":"")+it.n+"</u></b>");
+  say((CLASSES[it.cls]?CLASSES[it.cls].name:it.cls||"any")+" · "+SLOTN[it.slot]+(it.val?" · sell "+it.val+"g":""));
   say("This piece: "+statLine(it.st));
-  if(worn) say("On "+u.name+" now: <b>"+worn.n+"</b> — "+statLine(worn.st));
+  if(worn){ say("Worn now: <b>"+worn.q+" "+worn.n+"</b> — "+statLine(worn.st)); say("If you swap: "+deltaLine(it.st,worn.st)); }
   else say(u.name+" has nothing in "+SLOTN[it.slot]+".");
   choices([
     {list:true,label:"Equip on "+u.name,fn:()=>{
@@ -704,7 +736,7 @@ function statsMenu(){
 }
 function gearMenu(){
   say("Stash "+G.stash.length+" · Pots "+G.pots);
-  choices([{label:"Equip from stash",fn:equipFlow},{label:"Sell from stash",fn:sellMenu},{label:"Back",fn:hub}]);}
+  choices([{label:"Worn gear",fn:()=>wornMenu(gearMenu)},{label:"Equip from stash",fn:equipFlow},{label:"Sell from stash",fn:sellMenu},{label:"Back",fn:hub}]);}
 function sellMenu(){
   if(!G.stash.length){say("Stash empty.");return gearMenu();}
   say("Sell which piece?");
