@@ -550,6 +550,7 @@ function inn(){
     if(G.gold<8){say("<b>Not enough gold.</b>");return inn();}
     G.gold-=8; const h=makeHire(k); G.roster.push(h);
     if(G.party.length<5) G.party.push(h.id);
+    save(); hud();
     say("<b>"+h.name+"</b> the <b>"+CLASSES[k].name+"</b> signs on. Roster "+G.roster.length+"/10. Gold "+G.gold+".");
     inn();
   }}));
@@ -575,7 +576,7 @@ function statsMenu(){
 }
 function gearMenu(){
   say("Stash "+G.stash.length+" · Pots "+G.pots);
-  choices([{label:"Equip from stash",fn:equipFlow},{label:"Sell last item",fn:()=>{if(!G.stash.length){say("Empty.");return gearMenu();} const it=G.stash.pop(); G.gold+=it.val; say("Sold "+it.n); gearMenu();}},{label:"Back",fn:hub}]);
+  choices([{label:"Equip from stash",fn:equipFlow},{label:"Sell last item",fn:()=>{if(!G.stash.length){say("Empty.");return gearMenu();} const it=G.stash.pop(); G.gold+=it.val; hud(); say("Sold "+it.n); gearMenu();}},{label:"Back",fn:hub}]);
 }
 function equipFlow(){choices(party().map(u=>({label:u.name+" ["+(u.main?"any":CLASSES[u.cls].name)+"]",fn:()=>equipOnto(u)})).concat([{label:"Back",fn:gearMenu}]));}
 function equipOnto(u){
@@ -586,8 +587,8 @@ function equipOnto(u){
     gearBonus(u); if(u._setOn) say("<span class='rare'>SET COMPLETE</span> — "+setBonus(it.cls)); else say("Equipped."); equipOnto(u);
   }})).concat([{label:"Done",fn:gearMenu}]));
 }
-function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hub();}},{label:"Back",fn:hub}]);}
-function shop(){choices([{label:"Potion 8g",fn:()=>{if(G.gold<8){say("No.");return shop();}G.gold-=8;G.pots++;shop();}},{label:"Back",fn:hub}]);}
+function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hud(); hub();}},{label:"Back",fn:hub}]);}
+function shop(){choices([{label:"Potion 8g",fn:()=>{if(G.gold<8){say("No.");return shop();}G.gold-=8;G.pots++;hud();shop();}},{label:"Back",fn:hub}]);}
 function codex(){const c=mainU().codex; say(c.length?c.map(x=>x.n+" R"+x.r).join(" · "):"Empty Codex."); choices([{label:"Back",fn:hub}]);}
 boot();
 </script>
