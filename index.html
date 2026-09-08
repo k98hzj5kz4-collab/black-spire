@@ -508,28 +508,50 @@ function spendOn(u,back){
     u[k]+=k.includes("Max")?4:1; if(k==="hpMax")u.hp=stat(u,"hpMax"); if(k==="mpMax")u.mp=u.mpMax; u.unspent--; spendOn(u,back);
   }})).concat([{label:"Back",fn:back}]));
 }
+function statLine(st){
+  if(!st) return "no stats";
+  return Object.entries(st).map(([k,v])=>k.toUpperCase()+" +" +v).join("  ");
+}
+function inspectItem(it,u,bag,back){
+  const worn=u.gear&&u.gear[it.slot];
+  say("<b><u>"+(it.rare?"★ ":"")+it.n+"</u></b>");
+  say((it.q||"")+" · "+SLOTN[it.slot]+" · "+(CLASSES[it.cls]?CLASSES[it.cls].name:it.cls));
+  say("This piece: "+statLine(it.st));
+  if(worn) say("On "+u.name+" now: <b>"+worn.n+"</b> — "+statLine(worn.st));
+  else say(u.name+" has nothing in "+SLOTN[it.slot]+".");
+  choices([
+    {list:true,label:"Equip on "+u.name,fn:()=>{
+      const arr=bag==="stash"?G.stash:G.expedition;
+      const idx=arr.indexOf(it);
+      if(worn) arr.push(worn);
+      u.gear[it.slot]=it;
+      if(idx>=0) arr.splice(idx,1);
+      gearBonus(u); hud();
+      say("Equipped <b><u>"+it.n+"</u></b> on "+u.name+".");
+      back();
+    }},
+    {list:true,label:"Leave it",fn:back}
+  ]);
+}
 function fieldEquipPick(){
   choices(party().map(u=>({label:u.name,fn:()=>fieldEquipOnto(u)})).concat([{label:"Back",fn:camp}]));
 }
 function fieldEquipOnto(u){
   const items=(G.expedition||[]).filter(it=>u.main||it.cls===u.cls);
   if(!items.length){say("Nothing in the bag that fits "+u.name+".");return camp();}
-  choices(items.map(it=>({label:(it.rare?"★ ":"")+it.n,fn:()=>{
-    const idx=G.expedition.indexOf(it);
-    if(u.gear[it.slot]) G.expedition.push(u.gear[it.slot]);
-    u.gear[it.slot]=it;
-    if(idx>=0) G.expedition.splice(idx,1);
-    gearBonus(u);
-    say("Equipped <b><u>"+it.n+"</u></b> on "+u.name+".");
-    fieldEquipOnto(u);
-  }})).concat([{label:"Back",fn:camp}]));
+  choices(items.map(it=>({list:true,label:(it.rare?"★ ":"")+it.n+" · "+SLOTN[it.slot],fn:()=>inspectItem(it,u,"bag",()=>fieldEquipOnto(u))})).concat([{label:"Back",fn:camp}]));
 }
 function fieldUnequipPick(){
   const slots=[];
   party().forEach(u=>SLOTS.forEach(sl=>{if(u.gear&&u.gear[sl]) slots.push({u,sl,it:u.gear[sl]});}));
   if(!slots.length){say("Nothing equipped.");return camp();}
-  choices(slots.map(x=>({label:x.u.name+" · "+x.it.n,fn:()=>{
-    G.expedition.push(x.it); delete x.u.gear[x.sl]; say("Unequipped "+x.it.n); fieldUnequipPick();
+  choices(slots.map(x=>({list:true,label:x.u.name+" · "+x.it.n,fn:()=>{
+    say("<b><u>"+x.it.n+"</u></b> on "+x.u.name);
+    say(SLOTN[x.sl]+" · "+statLine(x.it.st));
+    choices([
+      {list:true,label:"Unequip to bag",fn:()=>{G.expedition.push(x.it); delete x.u.gear[x.sl]; hud(); say("Unequipped "+x.it.n); fieldUnequipPick();}},
+      {list:true,label:"Keep it on",fn:fieldUnequipPick}
+    ]);
   }})).concat([{label:"Back",fn:camp}]));
 }
 function extractScreen(){
@@ -599,10 +621,7 @@ function equipFlow(){choices(party().map(u=>({label:u.name+" ["+(u.main?"any":CL
 function equipOnto(u){
   const items=G.stash.filter(it=>u.main||it.cls===u.cls);
   if(!items.length){say("Nothing that fits.");return gearMenu();}
-  choices(items.map(it=>({label:(it.rare?"★ ":"")+it.n+" "+JSON.stringify(it.st),fn:()=>{
-    const idx=G.stash.indexOf(it); if(u.gear[it.slot]) G.stash.push(u.gear[it.slot]); u.gear[it.slot]=it; if(idx>=0)G.stash.splice(idx,1);
-    gearBonus(u); if(u._setOn) say("<span class='rare'>SET COMPLETE</span> — "+setBonus(it.cls)); else say("Equipped."); equipOnto(u);
-  }})).concat([{label:"Done",fn:gearMenu}]));
+  choices(items.map(it=>({list:true,label:(it.rare?"★ ":"")+it.n+" · "+SLOTN[it.slot],fn:()=>inspectItem(it,u,"stash",()=>equipOnto(u))})).concat([{label:"Done",fn:gearMenu}]));
 }
 function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hud(); hub();}},{label:"Back",fn:hub}]);}
 function shop(){choices([{label:"Potion 8g",fn:()=>{if(G.gold<8){say("No.");return shop();}G.gold-=8;G.pots++;hud();shop();}},{label:"Back",fn:hub}]);}
