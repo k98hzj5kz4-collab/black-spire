@@ -14,6 +14,10 @@ html,body{margin:0;color:var(--ink);font-family:"Source Sans 3",system-ui,sans-s
 background:#07060c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M0 80L80 0' stroke='%231a1428' stroke-width='1'/%3E%3C/svg%3E");
 background-color:#07060c}
 body{display:flex;flex-direction:column;max-width:860px;margin:0 auto;min-height:100dvh;background:linear-gradient(180deg,#1a1030 0%,#0a0812 28%,#07060c 100%)}
+body[data-scene="hub"] #stage{background:radial-gradient(ellipse at 50% 0%,#5a3a18 0%,transparent 50%),linear-gradient(#2a1a12,#120c10 60%,#3a2814)}
+body[data-scene="world"] #stage{background:radial-gradient(ellipse at 50% 10%,#245a4a 0%,transparent 55%),linear-gradient(#102018,#0a1210 70%,#1a2a18)}
+body[data-scene="combat"] #stage{background:radial-gradient(ellipse at 50% 0%,#6a2048 0%,transparent 50%),linear-gradient(#2a1020,#100810 65%,#3a1810)}
+body[data-scene="camp"] #stage{background:radial-gradient(ellipse at 50% 80%,#c45a20 0%,transparent 45%),linear-gradient(#1a1020,#0c0a10)}
 header{padding:12px 16px 10px;border-bottom:1px solid #4a3a22;background:linear-gradient(#1c1428,#120e1c);box-shadow:0 8px 24px #0008}
 h1{margin:0;font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f0c45a55}
 .meta{font-size:12px;color:#d7c7a0}
@@ -23,13 +27,15 @@ linear-gradient(#1b1230, #0e0a16 70%, #3a2a18);
 position:relative}
 #stage:after{content:"";position:absolute;left:8%;right:8%;bottom:10px;height:18px;background:radial-gradient(ellipse at center,#0007,transparent 70%);pointer-events:none}
 .rowcards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;position:relative;z-index:1}
-.card{width:86px;background:linear-gradient(#2a2038,#16101f);border:1px solid #6a5a40;border-radius:14px;padding:8px 6px 8px;text-align:center;box-shadow:0 8px 16px #0007}
+.card{width:104px;background:linear-gradient(#2a2038,#16101f);border:1px solid #6a5a40;border-radius:16px;padding:10px 6px 10px;text-align:center;box-shadow:0 8px 16px #0007}
 .card.foe{border-color:#8a3040;background:linear-gradient(#3a1520,#1a0c10)}
 .card.boss{border-color:var(--gold);box-shadow:0 0 0 1px #f0c45a,0 0 16px #f0c45a55}
 .card.dead{opacity:.38;filter:grayscale(.8)}
-.face{width:54px;height:54px;margin:0 auto 5px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#fff3,#0000 40%),var(--c,#3a2a55);border:2px solid #d7c7a066;box-shadow:inset 0 -8px 12px #0006}
-.face svg{width:30px;height:30px}
-.name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.face{width:64px;height:64px;margin:0 auto 6px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#fff4,#0000 40%),var(--c,#3a2a55);border:2px solid #f0c45a99;box-shadow:inset 0 -10px 14px #0006,0 0 16px color-mix(in srgb, var(--c) 40%, transparent)}
+.face svg{width:34px;height:34px}
+.name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.role{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#cbb896;margin-top:2px}
+.nums{font-size:10px;color:#e8dcc4;margin-top:3px}
 .mini{height:5px;background:#1c1826;border-radius:99px;margin-top:5px;overflow:hidden}.mini i{display:block;height:100%;background:linear-gradient(90deg,#ff8a9a,var(--hp))}
 .mini.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
 #log{height:92px;overflow:auto;padding:8px 16px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910}
@@ -181,30 +187,6 @@ function icKind(label){
 }
 const logEl=document.getElementById("log"),ch=document.getElementById("choices"),stage=document.getElementById("stage");
 function say(h,c){const p=document.createElement("p");if(c)p.className=c;p.innerHTML=h;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;}
-function icFor(label){
-  const L=label.toLowerCase();
-  if(L.includes("world")||L.includes("map")) return ICO.world;
-  if(L.includes("inn")||L.includes("hire")) return ICO.inn;
-  if(L.includes("barrack")||L.includes("party")) return ICO.barracks;
-  if(L.includes("equip")||L.includes("stash")) return ICO.gear;
-  if(L.includes("stat")||L.startsWith("+ ")) return ICO.stats;
-  if(L.includes("church")) return ICO.church;
-  if(L.includes("shop")||L.includes("potion 8")) return ICO.shop;
-  if(L.includes("codex")) return ICO.codex;
-  if(L.includes("save")) return ICO.save;
-  if(L.includes("attack")) return ICO.attack;
-  if(L.includes("skill")) return ICO.skills;
-  if(L.includes("defend")) return ICO.defend;
-  if(L.includes("potion")) return ICO.potion;
-  if(L.includes("devour")) return ICO.devour;
-  if(L.includes("next wave")) return ICO.wave;
-  if(L.includes("boss")) return ICO.boss;
-  if(L.includes("red gate")) return "🟥";
-  if(L.includes("hub")||L.includes("spirefoot")||L.includes("wake")||L.includes("leave")||L.includes("done")||L.includes("back")) return ICO.back;
-  if(L.includes("area ")) return "📍";
-  if(RANKS.some(r=>label.startsWith(r+" "))) return "⛰️";
-  return "▪️";
-}
 function choices(opts){
   ch.innerHTML="";
   const iconed=opts.length<=12 && opts.every(o=>!o.input);
@@ -223,12 +205,16 @@ function unitCard(u,foe){
   return `<div class="card ${foe?"foe":""} ${u.boss?"boss":""} ${u.dead||hp<=0?"dead":""}">
     <div class="face" style="--c:${CLSCOL[cls]||'#3a2a55'}">${svg(FACEKIND[cls]||"star","#fff8e8")}</div>
     <div class="name">${u.name}</div>
+    <div class="role">${foe?(u.boss?"BOSS":"FOE"):(u.main?"DEVOURER":(CLASSES[u.cls]?CLASSES[u.cls].name:""))}</div>
+    <div class="nums">${Math.max(0,hp|0)}/${max|0}</div>
     <div class="mini"><i style="width:${max?100*hp/max:0}%"></i></div>
     ${foe?"":'<div class="mini mp"><i style="width:'+(u.mpMax?100*u.mp/u.mpMax:0)+'%"></i></div>'}
   </div>`;
 }
+function setScene(s){document.body.setAttribute("data-scene",s||"hub");}
 function renderStage(extra){
   if(!G){stage.innerHTML="";return;}
+  if(G.combat) setScene("combat");
   let html="";
   if(G.combat&&G.combat.enemies){
     html+=`<div class="rowcards">${G.combat.enemies.map(e=>unitCard(e,true)).join("")}</div>`;
@@ -286,7 +272,7 @@ function goHub(){
   hub();
 }
 function hub(){
-  G.inArea=false;G.combat=null;G.outing=false;save();hud();
+  G.inArea=false;G.combat=null;G.outing=false;save();setScene("hub");hud();
   say("<b>Spirefoot</b>");
   say("<span class='sys'>Gold "+G.gold+" · Roster "+G.roster.length+"/10 · Codex "+mainU().codex.length+" · Best "+G.bestRank+"</span>");
   choices([
@@ -298,8 +284,10 @@ function hub(){
 function world(){
   G.outing=true;
   if(!G.expedition) G.expedition=[];
+  setScene("world");
   say("Tap a rank. Bag is unlimited out here. Only 3 pieces come home.");
-  renderStage(`<div class="zonegrid">${ZONES.map(z=>`<div class="ztile"><b>${z.rank}</b>${z.name.split(" ")[0]}</div>`).join("")}</div>`);
+  const zc=["#8a8680","#3d8a4a","#4a6a38","#4a6a8a","#c45a28","#3a2a4a","#c4a060","#6ab0e0","#c48ad0","#d02040"];
+  renderStage(`<div class="zonegrid">${ZONES.map((z,i)=>`<div class="ztile" style="border-color:${zc[i]}"><b style="color:${zc[i]}">${z.rank}</b>${z.name.split(" ")[0]}</div>`).join("")}</div>`);
   const opts=ZONES.map(z=>({label:z.rank+" "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)}));
   opts.push({label:"Return to Spirefoot",fn:goHub}); choices(opts);
 }
@@ -473,7 +461,7 @@ function rebirth(){
   G.inArea=false;G.combat=null; save(); choices([{label:"Wake in Spirefoot",fn:hub}]);
 }
 function camp(){
-  hud();
+  setScene("camp"); hud();
   say("<b>Camp.</b> Bag "+(G.expedition||[]).length+" · spend points, swap gear, then press on.");
   choices([
     {label:"Spend points",icon:"📊",fn:campStatsPick},
@@ -547,7 +535,7 @@ function confirmExtract(){
 }
 function inn(){
   if(G.roster.length>=10){say("Roster cap 10.");return choices([{label:"Back",fn:hub}]);}
-  choices(CLASS_IDS.map(k=>({label:CLASSES[k].name+" — 8g",icon:FACE[k],fn:()=>{
+  choices(CLASS_IDS.map(k=>({label:CLASSES[k].name+" — 8g",fn:()=>{
     if(G.gold<8){say("No gold.");return inn();} G.gold-=8; const h=makeHire(k); G.roster.push(h);
     if(G.party.length<5) G.party.push(h.id); say(h.name+" the "+CLASSES[k].name+" signs."); inn();
   }})).concat([{label:"Back",fn:hub}]));
@@ -555,7 +543,7 @@ function inn(){
 function barracks(){
   choices(G.roster.map(u=>{
     const on=G.party.includes(u.id);
-    return {label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,icon:FACE[u.main?"devourer":u.cls],fn:()=>{
+    return {label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>{
       if(u.main){u.row=u.row==="front"?"back":"front";return barracks();}
       if(on){if(G.party.length<=1){say("Keep someone.");return barracks();} G.party=G.party.filter(id=>id!==u.id);}
       else {if(G.party.length>=5){say("Party 5.");return barracks();} G.party.push(u.id);}
