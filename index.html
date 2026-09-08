@@ -7,21 +7,39 @@
 <meta name="theme-color" content="#0c0a12">
 <title>Black Spire</title>
 <style>
-:root{--bg:#0c0a12;--ink:#efe6d6;--dim:#8d8396;--acc:#c45cff;--gold:#e0b44a;--hp:#d4546a;--mp:#6aa7e8;--ok:#6fbf7a;--line:#2a2436}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;height:100%}
-body{display:flex;flex-direction:column;max-width:760px;margin:0 auto;min-height:100dvh}
-header{padding:10px 14px;border-bottom:1px solid var(--line);background:#110e18;position:sticky;top:0;z-index:4}
-h1{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:600}
+:root{--bg:#0b0914;--ink:#f3eadc;--dim:#8d8396;--acc:#c45cff;--gold:#e0b44a;--hp:#d4546a;--mp:#6aa7e8;--ok:#6fbf7a;--line:#2a2436}
+*{box-sizing:border-box}html,body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#24182f 0%,#0b0914 55%);color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;height:100%}
+body{display:flex;flex-direction:column;max-width:820px;margin:0 auto;min-height:100dvh}
+header{padding:10px 14px;border-bottom:1px solid var(--line);background:rgba(12,10,20,.92);position:sticky;top:0;z-index:4}
+h1{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--acc);font-weight:700}
 .meta{font-size:12px;color:var(--dim)}
-#log{flex:1;overflow:auto;padding:14px 16px;line-height:1.5;font-size:15px}
-#log p{margin:0 0 10px}.sys{color:var(--dim);font-size:13px}.gold{color:var(--gold)}.hurt{color:#e07080}.good{color:var(--ok)}.rare{color:#ff7ad1}.skill{color:#b9a6ff}
-#choices{padding:8px 12px 16px;display:flex;flex-direction:column;gap:7px}
-button.opt,input[type=text]{width:100%;padding:11px 13px;border-radius:8px;border:1px solid #3a3350;background:#1a1624;color:var(--ink);font:inherit;font-size:15px;text-align:left}
+#stage{padding:10px 12px 0;min-height:168px}
+.rowcards{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.card{width:72px;background:#16121f;border:1px solid #3a3350;border-radius:12px;padding:6px 4px 7px;text-align:center}
+.card.foe{border-color:#6a3040;background:#1c1016}
+.card.boss{box-shadow:0 0 0 1px #e0b44a}
+.card.dead{opacity:.35;filter:grayscale(1)}
+.face{width:44px;height:44px;margin:0 auto 4px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:#2a2038}
+.card.foe .face{background:#3a1820}
+.name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{height:4px;background:#1c1826;border-radius:3px;margin-top:4px;overflow:hidden}.mini i{display:block;height:100%;background:var(--hp)}
+.mini.mp i{background:var(--mp)}
+#log{height:88px;overflow:auto;padding:6px 14px;font-size:13px;color:#cbbfd8;border-top:1px solid var(--line);background:rgba(0,0,0,.2)}
+#log p{margin:0 0 6px}.sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#e07080}.good{color:var(--ok)}.rare{color:#ff7ad1}.skill{color:#b9a6ff}
+#choices{padding:8px 12px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#choices.list{grid-template-columns:1fr}
+button.opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;padding:8px 6px;border-radius:12px;border:1px solid #3a3350;background:#1a1624;color:var(--ink);font:inherit;font-size:11px;text-align:center}
+button.opt .ic{font-size:22px;line-height:1}
 button.opt:active{background:#2a2438}button.opt.danger{border-color:#6a3040}
+#choices.list button.opt{flex-direction:row;justify-content:flex-start;min-height:48px;padding:10px 12px;font-size:14px;text-align:left}
+input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:8px;border:1px solid #3a3350;background:#1a1624;color:var(--ink);font:inherit;font-size:16px}
 .barwrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .lab{font-size:10px;color:var(--dim);text-transform:uppercase}
 .bar{height:6px;background:#1c1826;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%}
 .hp i{background:var(--hp)}.mp i{background:var(--mp)}
+.zonegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.ztile{background:#16121f;border:1px solid #3a3350;border-radius:10px;padding:8px 4px;text-align:center;font-size:10px}
+.ztile b{display:block;color:var(--gold);font-size:14px}
 </style>
 </head>
 <body>
@@ -32,6 +50,7 @@ button.opt:active{background:#2a2438}button.opt.danger{border-color:#6a3040}
     <div><div class="lab" id="mpl">Zone</div><div class="bar mp"><i id="mpb" style="width:0%"></i></div></div>
   </div>
 </header>
+<section id="stage"></section>
 <main id="log"></main>
 <section id="choices"></section>
 <script>
@@ -85,15 +104,68 @@ const SKILLS={
   bolt:{n:"Dark Bolt",g:"Arcane",mp:5},drain:{n:"Drain",g:"Arcane",mp:6},hymn:{n:"Hymn",g:"Wards",mp:5},
   sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5}
 };
-const logEl=document.getElementById("log"),ch=document.getElementById("choices");
+const FACE={devourer:"🟣",vanguard:"🛡️",warrior:"⚔️",ranger:"🏹",rogue:"🗡️",monk:"👊",paladin:"✝️",cleric:"✨",darkmage:"🔮",bard:"🎵",alchemist:"⚗️",foe:"👹",boss:"💀"};
+const ICO={world:"🗺️",inn:"🛏️",barracks:"👥",gear:"🎒",stats:"📊",church:"⛪",shop:"🛒",codex:"📖",save:"💾",hub:"🏠",attack:"⚔️",skills:"✨",defend:"🛡️",potion:"🧪",devour:"🕳️",wave:"➡️",boss:"💀",back:"↩️",hire:"➕",sell:"💰",map:"🧭"};
+const logEl=document.getElementById("log"),ch=document.getElementById("choices"),stage=document.getElementById("stage");
 function say(h,c){const p=document.createElement("p");if(c)p.className=c;p.innerHTML=h;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;}
+function icFor(label){
+  const L=label.toLowerCase();
+  if(L.includes("world")||L.includes("map")) return ICO.world;
+  if(L.includes("inn")||L.includes("hire")||L.startsWith("vanguard")||CLASS_IDS.some(k=>L.includes(CLASSES[k].name.toLowerCase())&&L.includes("g"))) return ICO.hire;
+  if(L.includes("barrack")||L.includes("party")) return ICO.barracks;
+  if(L.includes("equip")||L.includes("stash")||L.includes("sold")||L.startsWith("★")||L.includes("weapon")||L.includes("head")) return ICO.gear;
+  if(L.includes("stat")||L.startsWith("+ ")) return ICO.stats;
+  if(L.includes("church")||L.includes("mend")&&L.includes("g")) return ICO.church;
+  if(L.includes("shop")||L.includes("potion 8")) return ICO.shop;
+  if(L.includes("codex")) return ICO.codex;
+  if(L.includes("save")||L.includes("bound")) return ICO.save;
+  if(L.includes("attack")) return ICO.attack;
+  if(L.includes("skill")) return ICO.skills;
+  if(L.includes("defend")||L.includes("guard")) return ICO.defend;
+  if(L.includes("potion")) return ICO.potion;
+  if(L.includes("devour")) return ICO.devour;
+  if(L.includes("next wave")) return ICO.wave;
+  if(L.includes("boss")) return ICO.boss;
+  if(L.includes("red gate")) return "🟥";
+  if(L.includes("hub")||L.includes("spirefoot")||L.includes("wake")||L.includes("leave")||L.includes("done")||L.includes("back")) return ICO.back;
+  if(L.includes("area ")) return "📍";
+  if(/^[gfedcbas+]+\s/.test(label.toLowerCase())||RANKS.some(r=>label.startsWith(r+" "))) return "⛰️";
+  return "▪️";
+}
 function choices(opts){
   ch.innerHTML="";
+  const iconed=opts.length<=12 && opts.every(o=>!o.input) && opts.length!==1;
+  ch.className=iconed?"icon":"list";
   opts.forEach(o=>{
-    if(o.input){const i=document.createElement("input");i.type="text";i.placeholder=o.ph||"";ch.appendChild(i);
-      const b=document.createElement("button");b.className="opt";b.textContent=o.label;b.onclick=()=>o.fn(i.value.trim());ch.appendChild(b);return;}
-    const b=document.createElement("button");b.className="opt"+(o.danger?" danger":"");b.textContent=o.label;b.onclick=o.fn;ch.appendChild(b);
+    if(o.input){ch.className="list"; const i=document.createElement("input");i.type="text";i.placeholder=o.ph||"";ch.appendChild(i);
+      const b=document.createElement("button");b.className="opt";b.innerHTML="<span class='ic'>✏️</span><span>"+o.label+"</span>";b.onclick=()=>o.fn(i.value.trim());ch.appendChild(b);return;}
+    const b=document.createElement("button");b.className="opt"+(o.danger?" danger":"");
+    b.innerHTML="<span class='ic'>"+(o.icon||icFor(o.label))+"</span><span>"+o.label+"</span>";
+    b.onclick=o.fn;ch.appendChild(b);
   });
+}
+function unitCard(u,foe){
+  const cls=u.main?"devourer":(u.cls||"foe");
+  const face=foe?(u.boss?FACE.boss:FACE.foe):(FACE[cls]||"🙂");
+  const hp=Math.max(0,u.hp), max=foe?u.hpMax:stat(u,"hpMax");
+  return `<div class="card ${foe?"foe":""} ${u.boss?"boss":""} ${u.dead||hp<=0?"dead":""}">
+    <div class="face">${face}</div>
+    <div class="name">${u.name}</div>
+    <div class="mini"><i style="width:${max?100*hp/max:0}%"></i></div>
+    ${foe?"":'<div class="mini mp"><i style="width:'+(u.mpMax?100*u.mp/u.mpMax:0)+'%"></i></div>'}
+  </div>`;
+}
+function renderStage(extra){
+  if(!G){stage.innerHTML="";return;}
+  let html="";
+  if(G.combat&&G.combat.enemies){
+    html+=`<div class="rowcards">${G.combat.enemies.map(e=>unitCard(e,true)).join("")}</div>`;
+    html+=`<div class="rowcards">${party().map(u=>unitCard(u,false)).join("")}</div>`;
+  } else if(G.roster){
+    html+=`<div class="rowcards">${party().map(u=>unitCard(u,false)).join("")}</div>`;
+  }
+  if(extra) html+=extra;
+  stage.innerHTML=html;
 }
 let G=null;
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(G));}catch(e){}}
@@ -121,6 +193,7 @@ function hud(){
   document.getElementById("mpl").textContent=G.inArea?(ZONES[G.zone].name+" "+(G.areaName||"")):("Best "+(G.bestRank||"G"));
   document.getElementById("hpb").style.width=(100*hp/hpm)+"%";
   document.getElementById("mpb").style.width=G.zone!=null?(10*(G.zone+1))+"%":"0%";
+  renderStage();
 }
 function boot(){
   G=load();
@@ -146,8 +219,9 @@ function hub(){
   ]);
 }
 function world(){
-  say("Each zone: 4 areas, 3–5 waves + boss. Sometimes a themed Red Gate.");
-  const opts=ZONES.map(z=>({label:z.rank+"  "+z.name+" — "+z.theme,fn:()=>enterZone(z.id)}));
+  say("Tap a rank tile. 4 areas, waves + boss. Red Gates appear at random.");
+  renderStage(`<div class="zonegrid">${ZONES.map(z=>`<div class="ztile"><b>${z.rank}</b>${z.name.split(" ")[0]}</div>`).join("")}</div>`);
+  const opts=ZONES.map(z=>({label:z.rank+"  "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)}));
   opts.push({label:"Hub",fn:hub}); choices(opts);
 }
 function enterZone(zi){
@@ -177,7 +251,7 @@ function startFight(enemies,boss){
   G.combat={enemies,boss,devourUsed:false,taunt:null};
   living().forEach(u=>u.gauge=stat(u,"spd")); enemies.forEach(e=>e.gauge=e.spd);
   say("<span class='hurt'>"+(boss?"BOSS · ":"Wave "+G.wave+"/"+G.waves+" · ")+enemies.map(e=>e.name).join(", ")+"</span>");
-  atb();
+  renderStage(); atb();
 }
 function atb(){
   if(!G.combat) return;
@@ -193,10 +267,10 @@ function atb(){
 }
 function ally(u){
   hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+u.mpMax+(u._setOn?" · SET":""));
-  const opts=[{label:"Attack",fn:()=>tgt(t=>act(u,"strike",t))},{label:"Skills",fn:()=>sk(u)},
-    {label:"Defend",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,u.mpMax);say(u.name+" guards.");after();}},
-    {label:"Potion",fn:()=>{if(!G.pots){say("None.");return ally(u);}G.pots--;u.hp=clamp(u.hp+18,0,stat(u,"hpMax"));say("Heal.");after();}}];
-  if(u.main&&!G.combat.devourUsed) opts.splice(3,0,{label:"Devour (8 MP, foe <20%)",fn:()=>devourMenu(u)});
+  const opts=[{label:"Attack",icon:"⚔️",fn:()=>tgt(t=>act(u,"strike",t))},{label:"Skills",icon:"✨",fn:()=>sk(u)},
+    {label:"Defend",icon:"🛡️",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,u.mpMax);say(u.name+" guards.");after();}},
+    {label:"Potion",icon:"🧪",fn:()=>{if(!G.pots){say("None.");return ally(u);}G.pots--;u.hp=clamp(u.hp+18,0,stat(u,"hpMax"));say("Heal.");after();}}];
+  if(u.main&&!G.combat.devourUsed) opts.splice(3,0,{label:"Devour",icon:"🕳️",fn:()=>devourMenu(u)});
   choices(opts);
 }
 function sk(u){
