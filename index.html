@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0c0a12">
+<title>Black Spire</title>
+<style>
+:root{--bg:#0c0a12;--ink:#efe6d6;--dim:#8d8396;--acc:#c45cff;--gold:#e0b44a;--hp:#d4546a;--mp:#6aa7e8;--ok:#6fbf7a;--line:#2a2436}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;height:100%}
+body{display:flex;flex-direction:column;max-width:760px;margin:0 auto;min-height:100dvh}
+header{padding:10px 14px;border-bottom:1px solid var(--line);background:#110e18;position:sticky;top:0;z-index:4}
+h1{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:600}
+.meta{font-size:12px;color:var(--dim)}
+#log{flex:1;overflow:auto;padding:14px 16px;line-height:1.5;font-size:15px}
+#log p{margin:0 0 10px}.sys{color:var(--dim);font-size:13px}.gold{color:var(--gold)}.hurt{color:#e07080}.good{color:var(--ok)}.rare{color:#ff7ad1}.skill{color:#b9a6ff}
+#choices{padding:8px 12px 16px;display:flex;flex-direction:column;gap:7px}
+button.opt,input[type=text]{width:100%;padding:11px 13px;border-radius:8px;border:1px solid #3a3350;background:#1a1624;color:var(--ink);font:inherit;font-size:15px;text-align:left}
+button.opt:active{background:#2a2438}button.opt.danger{border-color:#6a3040}
+.barwrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.lab{font-size:10px;color:var(--dim);text-transform:uppercase}
+.bar{height:6px;background:#1c1826;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%}
+.hp i{background:var(--hp)}.mp i{background:var(--mp)}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;justify-content:space-between"><h1>Black Spire</h1><div class="meta" id="top">Spirefoot</div></div>
+  <div class="barwrap">
+    <div><div class="lab" id="hpl">Party</div><div class="bar hp"><i id="hpb" style="width:100%"></i></div></div>
+    <div><div class="lab" id="mpl">Zone</div><div class="bar mp"><i id="mpb" style="width:0%"></i></div></div>
+  </div>
+</header>
+<main id="log"></main>
+<section id="choices"></section>
+<script>
+const SAVE="blackspire_zones_v1";
+const d=n=>1+Math.floor(Math.random()*n);
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const RANKS=["G","F","E","D","C","B","A","S","S+","S++"];
+const ZONES=RANKS.map((rank,i)=>({
+  id:i,rank,
+  name:["Gateworks","Fangwood","Emberfen","Drowned Vaults","Cinderreach","Blackglass","Ashwastes","Stormspire","Veilmarch","Heart of the Spire"][i],
+  theme:["iron & oaths","teeth & sap","fever-bogs","salt dead","cinder knights","obsidian choir","dust warlords","thunder courts","thin reality","the appetite"][i],
+  areas:["Approach","Outer","Inner","Sanctum"],
+  red:["Blood Oath Hall","Crimson Den","Scarlet Mire","Red Tide Crypt","Ruby Kiln","Carmine Mirror","Sanguine Dune","Vermilion Spire","Red Veil","Crimson Heart"][i],
+  mult:1+i*0.45
+}));
+const CLASSES={
+  vanguard:{name:"Vanguard",w:{hp:3,def:3,atk:1},skills:["taunt","bash"]},
+  warrior:{name:"Warrior",w:{hp:2,atk:3,def:1},skills:["cleave","power"]},
+  ranger:{name:"Ranger",w:{atk:2,spd:3},skills:["mark","shot"]},
+  rogue:{name:"Rogue",w:{atk:2,spd:2,luk:2},skills:["stab","veil"]},
+  monk:{name:"Monk",w:{atk:2,spd:2,hp:1},skills:["flurry","palm"]},
+  paladin:{name:"Paladin",w:{atk:2,def:1,spr:2},skills:["smite","aegis"]},
+  cleric:{name:"Cleric",w:{spr:3,hp:2},skills:["mend","ward"]},
+  darkmage:{name:"Dark Mage",w:{int:3,spr:2},skills:["bolt","drain"]},
+  bard:{name:"Bard",w:{spr:2,luk:2,spd:1},skills:["hymn","sting"]},
+  alchemist:{name:"Alchemist",w:{int:2,spd:2},skills:["vial","mist"]}
+};
+const CLASS_IDS=Object.keys(CLASSES);
+const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"]};
+const SLOTS=["weapon","head","body","hands","acc"];
+const SLOTN={weapon:"Weapon",head:"Head",body:"Body",hands:"Hands",acc:"Charm"};
+const SET_PREFIX=[["Oath","Fang","Fever","Brine","Cinder","Glass","Dust","Storm","Veil","Heart"],["Bastion","Thorn","Mire","Tide","Forge","Mirror","Bone","Sky","Rift","Crown"]];
+function setId(zi,cls,setn){return "z"+zi+"_"+cls+"_"+setn;}
+function setName(zi,cls,setn){return SET_PREFIX[setn][zi]+" "+CLASSES[cls].name;}
+function setBonus(cls){
+  return ({vanguard:"+12% DEF",warrior:"+12% ATK",ranger:"Mark +15%",rogue:"+8% LUK crit",monk:"Flurry +1",paladin:"Aegis mends 6%",cleric:"Mend +20%",darkmage:"Bolt +15%",bard:"Hymn +ATK",alchemist:"Vial burn"})[cls];
+}
+function makePiece(zi,cls,setn,slot,rare){
+  const z=ZONES[zi],C=CLASSES[cls],m=z.mult*(rare?1.35:1),st={};
+  Object.entries(C.w).forEach(([k,v])=>{st[k]=Math.max(1,Math.round(v*m*(slot==="weapon"||slot==="body"?1.2:0.8)));});
+  return {id:uid(),n:setName(zi,cls,setn)+" "+SLOTN[slot],slot,cls,zi,setn,set:setId(zi,cls,setn),rare:!!rare,q:rare?"Rare":"Uncommon",st,val:Math.round(4+zi*3+(rare?8:2))};
+}
+const SKILLS={
+  strike:{n:"Strike",g:"Strikes",mp:0},taunt:{n:"Taunt",g:"Wards",mp:4},bash:{n:"Bash",g:"Strikes",mp:3},
+  cleave:{n:"Cleave",g:"Sweeps",mp:5},power:{n:"Power Blow",g:"Strikes",mp:4},mark:{n:"Mark",g:"Wards",mp:3},
+  shot:{n:"Shot",g:"Strikes",mp:2},stab:{n:"Backstab",g:"Strikes",mp:4},veil:{n:"Veilstep",g:"Wards",mp:5},
+  flurry:{n:"Flurry",g:"Sweeps",mp:5},palm:{n:"Palm",g:"Strikes",mp:3},smite:{n:"Smite",g:"Strikes",mp:5},
+  aegis:{n:"Aegis",g:"Wards",mp:5},mend:{n:"Mend",g:"Mends",mp:4},ward:{n:"Ward",g:"Wards",mp:4},
+  bolt:{n:"Dark Bolt",g:"Arcane",mp:5},drain:{n:"Drain",g:"Arcane",mp:6},hymn:{n:"Hymn",g:"Wards",mp:5},
+  sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5}
+};
+const logEl=document.getElementById("log"),ch=document.getElementById("choices");
+function say(h,c){const p=document.createElement("p");if(c)p.className=c;p.innerHTML=h;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;}
+function choices(opts){
+  ch.innerHTML="";
+  opts.forEach(o=>{
+    if(o.input){const i=document.createElement("input");i.type="text";i.placeholder=o.ph||"";ch.appendChild(i);
+      const b=document.createElement("button");b.className="opt";b.textContent=o.label;b.onclick=()=>o.fn(i.value.trim());ch.appendChild(b);return;}
+    const b=document.createElement("button");b.className="opt"+(o.danger?" danger":"");b.textContent=o.label;b.onclick=o.fn;ch.appendChild(b);
+  });
+}
+let G=null;
+function save(){try{localStorage.setItem(SAVE,JSON.stringify(G));}catch(e){}}
+function load(){try{const r=localStorage.getItem(SAVE);return r?JSON.parse(r):null;}catch(e){return null;}}
+function base(){return {hp:30,hpMax:30,mp:16,mpMax:16,atk:8,def:4,spd:6,int:5,spr:5,luk:5};}
+function makeMain(name){return Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],codex:[],gear:{},dead:false,gauge:0},base());}
+function makeHire(cls){
+  const C=CLASSES[cls],s=base();
+  Object.entries(C.w).forEach(([k,v])=>{if(k==="hp"){s.hp=s.hpMax=22+v*3;}else s[k]=(s[k]||0)+v*2;});
+  return Object.assign({id:uid(),name:pick(NAMES[cls]),cls,main:false,lv:1,xp:0,row:"front",skills:C.skills.slice(),gear:{},dead:false,gauge:0},s);
+}
+function party(){return G.party.map(id=>G.roster.find(r=>r.id===id)).filter(Boolean);}
+function living(){return party().filter(u=>!u.dead&&u.hp>0);}
+function mainU(){return G.roster.find(r=>r.main);}
+function gearBonus(u){
+  const add={hp:0,atk:0,def:0,spd:0,int:0,spr:0,luk:0}; const sets={};
+  SLOTS.forEach(sl=>{const it=u.gear&&u.gear[sl]; if(!it)return; Object.entries(it.st||{}).forEach(([k,v])=>add[k]=(add[k]||0)+v); sets[it.set]=(sets[it.set]||0)+1;});
+  u._setOn=null; Object.entries(sets).forEach(([sid,n])=>{if(n>=5)u._setOn=sid;}); return add;
+}
+function stat(u,k){const b=gearBonus(u); return k==="hpMax"?u.hpMax+(b.hp||0):(u[k]||0)+(b[k]||0);}
+function hud(){
+  const all=party(),hp=all.reduce((a,u)=>a+Math.max(0,u.hp),0),hpm=all.reduce((a,u)=>a+stat(u,"hpMax"),0)||1;
+  document.getElementById("top").textContent=(G.guild||"Hunter")+" · "+G.gold+"g · "+(G.zone!=null?ZONES[G.zone].rank:"hub");
+  document.getElementById("hpl").textContent="HP "+hp+"/"+hpm;
+  document.getElementById("mpl").textContent=G.inArea?(ZONES[G.zone].name+" "+(G.areaName||"")):("Best "+(G.bestRank||"G"));
+  document.getElementById("hpb").style.width=(100*hp/hpm)+"%";
+  document.getElementById("mpb").style.width=G.zone!=null?(10*(G.zone+1))+"%":"0%";
+}
+function boot(){
+  G=load();
+  if(!G||!G.roster){
+    say("<b>BLACK SPIRE</b>");
+    say("Ten ranked wilds. You are the <span class='rare'>Devourer</span>. Hires wear class sets. You wear anything — and eat what dies.");
+    choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
+      G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],roster:[],party:[],best:0,bestRank:"G"};
+      G.roster=[makeMain(G.name)];G.party=["main"];
+      choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
+    }}]); return;
+  }
+  say("Spirefoot. "+G.name+" of "+G.guild+".","sys"); hub();
+}
+function hub(){
+  G.inArea=false;G.combat=null;save();hud();
+  say("<b>Spirefoot</b>");
+  say("<span class='sys'>Gold "+G.gold+" · Roster "+G.roster.length+"/10 · Codex "+mainU().codex.length+" · Best "+G.bestRank+"</span>");
+  choices([
+    {label:"World map (G → S++)",fn:world},{label:"Inn — hire",fn:inn},{label:"Barracks — party of 5",fn:barracks},
+    {label:"Equip / stash",fn:gearMenu},{label:"Stats",fn:statsMenu},{label:"Church",fn:church},{label:"Shop",fn:shop},
+    {label:"Codex",fn:codex},{label:"Save",fn:()=>{save();say("Bound.");hub();}}
+  ]);
+}
+function world(){
+  say("Each zone: 4 areas, 3–5 waves + boss. Sometimes a themed Red Gate.");
+  const opts=ZONES.map(z=>({label:z.rank+"  "+z.name+" — "+z.theme,fn:()=>enterZone(z.id)}));
+  opts.push({label:"Hub",fn:hub}); choices(opts);
+}
+function enterZone(zi){
+  G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme);
+  const opts=z.areas.map((a,i)=>({label:"Area "+(i+1)+": "+a+" (Set "+(i<2?"I":"II")+")",fn:()=>startArea(zi,i,false)}));
+  if(Math.random()<0.12) opts.push({label:"★ Red Gate: "+z.red,fn:()=>startArea(zi,4,true)});
+  opts.push({label:"Leave zone",fn:world}); choices(opts);
+}
+function startArea(zi,ai,red){
+  const z=ZONES[zi]; G.inArea=true;G.area=ai;G.red=red;G.areaName=red?z.red:z.areas[ai];
+  G.waves=red?5:(2+d(3)); G.wave=0; G.setBand=red?(d(2)-1):(ai<2?0:1);
+  say((red?"<span class='rare'>RED GATE.</span> ":"")+"Entering "+G.areaName+". "+G.waves+" waves + boss.");
+  nextWave();
+}
+function foe(name,zi,boss){
+  const m=ZONES[zi].mult*(boss?2.2:1),hp=Math.round((18+zi*8)*m);
+  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((6+zi*2)*m),def:Math.round((2+zi)*m*0.5),spd:4+zi,int:4+zi,spr:3+zi,boss:!!boss,dead:false,gauge:0,marked:0};
+}
+function pack(zi,boss){
+  if(boss) return [foe(ZONES[zi].rank+" "+["Warden","Packlord","Fen-King","Tide Priest","Kiln Duke","Choir Blade","Dust Tyrant","Storm Judge","Veil Twin","Appetite"][zi],zi,true)];
+  const n=1+Math.min(2,Math.floor(zi/3)+1); const p=[];
+  for(let i=0;i<n;i++) p.push(foe(ZONES[zi].name.split(" ")[0]+" "+pick(["Drone","Stalker","Bound","Raider"]),zi,false));
+  return p;
+}
+function nextWave(){ G.wave++; startFight(pack(G.zone,false),false); }
+function startFight(enemies,boss){
+  G.combat={enemies,boss,devourUsed:false,taunt:null};
+  living().forEach(u=>u.gauge=stat(u,"spd")); enemies.forEach(e=>e.gauge=e.spd);
+  say("<span class='hurt'>"+(boss?"BOSS · ":"Wave "+G.wave+"/"+G.waves+" · ")+enemies.map(e=>e.name).join(", ")+"</span>");
+  atb();
+}
+function atb(){
+  if(!G.combat) return;
+  if(!living().length) return wipe();
+  if(!G.combat.enemies.some(e=>e.hp>0)) return winFight();
+  const units=[...living(),...G.combat.enemies.filter(e=>e.hp>0)];
+  for(let i=0;i<300;i++){
+    units.forEach(u=>{if(u.hp>0)u.gauge+=Math.max(1,u.spd||stat(u,"spd"));});
+    const r=units.filter(u=>u.hp>0&&u.gauge>=100).sort((a,b)=>b.gauge-a.gauge);
+    if(r[0]){r[0].gauge-=100; return (r[0].main||G.party.includes(r[0].id))?ally(r[0]):enemy(r[0]);}
+  }
+  enemy(G.combat.enemies.find(e=>e.hp>0));
+}
+function ally(u){
+  hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+u.mpMax+(u._setOn?" · SET":""));
+  const opts=[{label:"Attack",fn:()=>tgt(t=>act(u,"strike",t))},{label:"Skills",fn:()=>sk(u)},
+    {label:"Defend",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,u.mpMax);say(u.name+" guards.");after();}},
+    {label:"Potion",fn:()=>{if(!G.pots){say("None.");return ally(u);}G.pots--;u.hp=clamp(u.hp+18,0,stat(u,"hpMax"));say("Heal.");after();}}];
+  if(u.main&&!G.combat.devourUsed) opts.splice(3,0,{label:"Devour (8 MP, foe <20%)",fn:()=>devourMenu(u)});
+  choices(opts);
+}
+function sk(u){
+  const opts=u.skills.filter(s=>SKILLS[s]).map(s=>{
+    const S=SKILLS[s];
+    return {label:S.n+" · "+S.g+" · "+S.mp+" MP",fn:()=>{
+      if(u.mp<S.mp){say("No MP.");return ally(u);}
+      if(s==="mend") return choices(living().map(t=>({label:"Mend "+t.name,fn:()=>act(u,s,t)})).concat([{label:"Back",fn:()=>ally(u)}]));
+      if(["taunt","ward","hymn","aegis","mist","veil"].includes(s)) return act(u,s,null);
+      tgt(t=>act(u,s,t));
+    }};
+  });
+  opts.push({label:"Back",fn:()=>ally(u)}); choices(opts);
+}
+function tgt(cb){const es=G.combat.enemies.filter(e=>e.hp>0); if(es.length===1)return cb(es[0]);
+  choices(es.map(e=>({label:e.name+" "+e.hp+"/"+e.hpMax,fn:()=>cb(e)})).concat([{label:"Back",fn:atb}]));}
+function phys(a,t,mult){let m=mult; if(a.row==="back")m*=0.7; if(t.marked)m*=1.25; const raw=Math.max(1,Math.floor((stat(a,"atk")*1.1+d(6))*m-t.def*0.35)); t.hp-=raw; return raw;}
+function mag(a,t,mult){const raw=Math.max(1,Math.floor((stat(a,"int")*1.25+d(6))*mult-t.spr*0.25)); t.hp-=raw; return raw;}
+function act(u,sid,t){
+  const S=SKILLS[sid]; if(S.mp){if(u.mp<S.mp){say("No MP");return ally(u);} u.mp-=S.mp;}
+  let msg="";
+  if(sid==="taunt"){G.combat.taunt=u.id;msg=u.name+" taunts.";}
+  else if(sid==="ward"||sid==="aegis"){u.ward=2;msg=u.name+" wards."; if(sid==="aegis"&&u._setOn)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*0.06),0,stat(u,"hpMax"));}
+  else if(sid==="hymn"){living().forEach(p=>p.atk+=1);msg=u.name+" hymns.";}
+  else if(sid==="veil"||sid==="mist"){u.row="back";msg=u.name+" fades.";}
+  else if(sid==="mend"){const h=Math.floor((8+stat(u,"spr"))*(u._setOn&&u.cls==="cleric"?1.2:1)); t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); msg=u.name+" mends "+t.name+" +"+h;}
+  else if(sid==="bolt"||sid==="vial"){msg=u.name+" burns "+t.name+" for "+mag(u,t,sid==="bolt"?1.2:1);}
+  else if(sid==="drain"){const n=mag(u,t,0.8); u.hp=clamp(u.hp+Math.ceil(n/2),0,stat(u,"hpMax")); msg=u.name+" drains "+n;}
+  else if(sid==="cleave"||sid==="flurry"){G.combat.enemies.filter(e=>e.hp>0).forEach(e=>phys(u,e,0.7)); msg=u.name+" sweeps.";}
+  else if(sid==="mark"){t.marked=1;msg=u.name+" marks "+t.name;}
+  else msg=u.name+" hits "+t.name+" for <span class='hurt'>"+phys(u,t,sid==="power"?1.4:1)+"</span>.";
+  say(msg,"skill"); if(t&&t.hp<=0){t.hp=0;say(t.name+" drops.");} after();
+}
+function devourMenu(u){
+  if(u.mp<8){say("Need 8 MP.");return ally(u);}
+  const es=G.combat.enemies.filter(e=>e.hp>0&&e.hp/e.hpMax<0.2);
+  if(!es.length){say("No prey under 20%.");return ally(u);}
+  choices(es.map(e=>({label:"Devour "+e.name,fn:()=>doDevour(u,e)})).concat([{label:"Back",fn:()=>ally(u)}]));
+}
+function doDevour(u,e){
+  u.mp-=8;G.combat.devourUsed=true;
+  if(e.boss){const c=e.hp/e.hpMax<0.1?75:50; say("No execute. Steal "+c+"%."); if(d(100)<=c)steal(); else say("Slips.");}
+  else {say("<span class='rare'>Devour.</span>"); e.hp=0; steal();}
+  after();
+}
+function steal(){
+  const m=mainU(), pool=[{n:"Iron Pulse"},{n:"Quick Vein"},{n:"Shadow Edge",sid:"power"},{n:"Blood Tick",sid:"drain"},{n:ZONES[G.zone].rank+" Appetite"}];
+  const item=pick(pool), have=m.codex.find(c=>c.n===item.n);
+  if(have){if(have.r<3){have.r++;say("Codex "+have.n+" R"+have.r,"rare");} else say("Capped.");}
+  else {m.codex.push({n:item.n,r:1,sid:item.sid}); if(item.sid&&!m.skills.includes(item.sid))m.skills.push(item.sid);
+    if(item.n==="Quick Vein")m.spd++; if(item.n==="Iron Pulse"){m.hpMax+=4;m.hp+=4;} say("<span class='rare'>Codex: "+item.n+"</span>");}
+}
+function enemy(e){
+  const ts=living(); if(!ts.length)return wipe();
+  let t=G.combat.taunt&&ts.find(x=>x.id===G.combat.taunt);
+  if(!t){const f=ts.filter(x=>x.row==="front"); t=pick(f.length&&d(10)>2?f:ts);}
+  let dmg=Math.max(1,e.atk+d(4)-Math.floor(stat(t,"def")*0.45));
+  if(t.defending)dmg=Math.max(1,Math.floor(dmg*0.5));
+  if(t.ward){dmg=Math.max(1,Math.floor(dmg*0.75));t.ward--;}
+  t.defending=0;t.hp-=dmg; say(e.name+" hits "+t.name+" <span class='hurt'>"+dmg+"</span>.");
+  if(t.hp<=0){t.hp=0;down(t);} after();
+}
+function down(u){
+  const fail=d(100)<=(G.combat.boss?90:85);
+  if(!fail){u.hp=1;say(u.name+" clings.","good");return;}
+  u.dead=true; say(u.main?"<span class='hurt'>Main down.</span>":"<span class='hurt'>"+u.name+" down.</span>");
+}
+function after(){ if(!G.combat)return; if(!G.combat.enemies.some(e=>e.hp>0))return winFight(); if(!living().length)return wipe(); atb(); }
+function dropLoot(){
+  const clsPool=party().filter(u=>!u.main).map(u=>u.cls);
+  const cls=clsPool.length?pick(clsPool):pick(CLASS_IDS);
+  const rare=G.red||G.combat.boss?Math.random()<0.45:Math.random()<0.18;
+  return makePiece(G.zone,cls,G.setBand,pick(SLOTS),rare);
+}
+function winFight(){
+  G.roster.slice().forEach(u=>{
+    if(!u.main&&u.dead){
+      if(d(100)<=(G.combat.boss?90:85)){say(u.name+" is gone. Permanent.","hurt"); G.party=G.party.filter(id=>id!==u.id); G.roster=G.roster.filter(r=>r.id!==u.id);}
+      else {u.dead=false;u.hp=1;say(u.name+" crawls back.","good");}
+    }
+  });
+  if(mainU().dead||mainU().hp<=0) return rebirth();
+  const gold=5+G.zone*3+(G.combat.boss?15:0); G.gold+=gold;
+  const loot=dropLoot(); G.stash.push(loot);
+  say("<span class='good'>Clear.</span> +"+gold+"g. "+(loot.rare?"<span class='rare'>Rare</span> ":"")+loot.n);
+  living().forEach(u=>{u.xp+=6+G.zone*2; if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; if(u.main)u.unspent+=2; say(u.name+" Lv"+u.lv,"good");}});
+  const wasBoss=G.combat.boss; G.combat=null; save(); hud();
+  if(!wasBoss && G.wave<G.waves) choices([{label:"Next wave",fn:nextWave}]);
+  else if(!wasBoss && G.wave>=G.waves) choices([{label:"Boss of "+G.areaName,fn:()=>startFight(pack(G.zone,true),true)}]);
+  else areaClear();
+}
+function areaClear(){
+  G.inArea=false; const z=ZONES[G.zone]; if(G.zone>G.best){G.best=G.zone;G.bestRank=z.rank;}
+  say("<span class='good'>"+G.areaName+" falls.</span>");
+  choices([{label:"Another area in "+z.name,fn:()=>enterZone(G.zone)},{label:"World map",fn:world},{label:"Spirefoot",fn:hub}]);
+}
+function wipe(){
+  say("<span class='hurt'>Wipe. Limp home.</span>"); G.inArea=false;G.combat=null;
+  G.roster=G.roster.filter(u=>u.main||(u.hp>0&&!u.dead));
+  G.party=G.party.filter(id=>G.roster.some(r=>r.id===id));
+  if(mainU().dead||mainU().hp<=0) return rebirth();
+  mainU().hp=Math.max(1,Math.floor(stat(mainU(),"hpMax")*0.3)); save(); hub();
+}
+function rebirth(){
+  say("Rebirth Lv1. Codex stays.");
+  const old=mainU(),codex=old.codex.slice(),name=old.name;
+  G.roster=G.roster.filter(r=>!r.main);
+  const m=makeMain(name); m.codex=codex;
+  codex.forEach(c=>{if(c.n==="Quick Vein")m.spd+=c.r; if(c.n==="Iron Pulse"){m.hpMax+=4*c.r;m.hp=m.hpMax;} if(c.sid&&!m.skills.includes(c.sid))m.skills.push(c.sid);});
+  G.roster.unshift(m); G.party=G.party.filter(id=>id!=="main"); G.party.unshift("main");
+  G.inArea=false;G.combat=null; save(); choices([{label:"Wake in Spirefoot",fn:hub}]);
+}
+function inn(){
+  if(G.roster.length>=10){say("Roster cap 10.");return choices([{label:"Back",fn:hub}]);}
+  choices(CLASS_IDS.map(k=>({label:CLASSES[k].name+" — 8g",fn:()=>{
+    if(G.gold<8){say("No gold.");return inn();} G.gold-=8; const h=makeHire(k); G.roster.push(h);
+    if(G.party.length<5) G.party.push(h.id); say(h.name+" the "+CLASSES[k].name+" signs."); inn();
+  }})).concat([{label:"Back",fn:hub}]));
+}
+function barracks(){
+  choices(G.roster.map(u=>{
+    const on=G.party.includes(u.id);
+    return {label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>{
+      if(u.main){u.row=u.row==="front"?"back":"front";return barracks();}
+      if(on){if(G.party.length<=1){say("Keep someone.");return barracks();} G.party=G.party.filter(id=>id!==u.id);}
+      else {if(G.party.length>=5){say("Party 5.");return barracks();} G.party.push(u.id);}
+      barracks();
+    }};
+  }).concat([{label:"Done",fn:hub}]));
+}
+function statsMenu(){
+  const m=mainU(); if(m.unspent<=0){say("No points.");return choices([{label:"Back",fn:hub}]);}
+  say("Unspent "+m.unspent);
+  const keys=[["hpMax","HP"],["mpMax","MP"],["atk","ATK"],["def","DEF"],["spd","SPD"],["int","INT"],["spr","SPR"],["luk","LUK"]];
+  choices(keys.map(([k,l])=>({label:"+ "+l+" ("+m[k]+")",fn:()=>{m[k]+=k.includes("Max")?4:1; if(k==="hpMax")m.hp=m.hpMax; if(k==="mpMax")m.mp=m.mpMax; m.unspent--; statsMenu();}})).concat([{label:"Back",fn:hub}]));
+}
+function gearMenu(){
+  say("Stash "+G.stash.length+" · Pots "+G.pots);
+  choices([{label:"Equip from stash",fn:equipFlow},{label:"Sell last item",fn:()=>{if(!G.stash.length){say("Empty.");return gearMenu();} const it=G.stash.pop(); G.gold+=it.val; say("Sold "+it.n); gearMenu();}},{label:"Back",fn:hub}]);
+}
+function equipFlow(){choices(party().map(u=>({label:u.name+" ["+(u.main?"any":CLASSES[u.cls].name)+"]",fn:()=>equipOnto(u)})).concat([{label:"Back",fn:gearMenu}]));}
+function equipOnto(u){
+  const items=G.stash.filter(it=>u.main||it.cls===u.cls);
+  if(!items.length){say("Nothing that fits.");return gearMenu();}
+  choices(items.map(it=>({label:(it.rare?"★ ":"")+it.n+" "+JSON.stringify(it.st),fn:()=>{
+    const idx=G.stash.indexOf(it); if(u.gear[it.slot]) G.stash.push(u.gear[it.slot]); u.gear[it.slot]=it; if(idx>=0)G.stash.splice(idx,1);
+    gearBonus(u); if(u._setOn) say("<span class='rare'>SET COMPLETE</span> — "+setBonus(it.cls)); else say("Equipped."); equipOnto(u);
+  }})).concat([{label:"Done",fn:gearMenu}]));
+}
+function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hub();}},{label:"Back",fn:hub}]);}
+function shop(){choices([{label:"Potion 8g",fn:()=>{if(G.gold<8){say("No.");return shop();}G.gold-=8;G.pots++;shop();}},{label:"Back",fn:hub}]);}
+function codex(){const c=mainU().codex; say(c.length?c.map(x=>x.n+" R"+x.r).join(" · "):"Empty Codex."); choices([{label:"Back",fn:hub}]);}
+boot();
+</script>
+</body>
+</html>
