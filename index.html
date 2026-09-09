@@ -74,7 +74,12 @@ input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:10px;bor
 .zonegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .ztile{background:linear-gradient(#2a2030,#16101c);border:1px solid #6a5a40;border-radius:12px;padding:10px 4px;text-align:center;font-size:10px;box-shadow:0 4px 8px #0005}
 .ztile b{display:block;color:var(--gold);font-family:Cinzel,serif;font-size:15px}
-</style>
+.itemlink{color:#ffe08a;text-decoration:underline;cursor:pointer}
+#pop{display:none;position:fixed;inset:0;background:#000a;z-index:40;align-items:center;justify-content:center;padding:18px}
+#pop.on{display:flex}
+#pop .box{background:#16101c;border:1px solid #f0c45a;border-radius:16px;padding:16px;max-width:360px;width:100%;color:#f6efe3;font-size:14px;line-height:1.45}
+#pop .box h3{margin:0 0 8px;font-family:Cinzel,serif;color:#f0c45a;font-size:16px}
+#pop .box button{margin-top:12px;width:100%;padding:10px;border-radius:10px;border:1px solid #5a4a32;background:#2a2238;color:#f6efe3}
 </head>
 <body>
 <header>
@@ -87,8 +92,28 @@ input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:10px;bor
 <section id="stage"></section>
 <main id="log"></main>
 <section id="choices"></section>
+<div id="pop"><div class="box" id="popbox"></div></div>
 <script>
 const SAVE="blackspire_zones_v1";
+const ITEMS={};
+function remember(it){if(it&&it.id) ITEMS[it.id]=it; return it;}
+function itemLink(it){
+  remember(it);
+  return "<span class='itemlink' data-iid='"+it.id+"'><b><u>"+(it.q?it.q+" ":"")+it.n+"</u></b></span>";
+}
+function openItem(id){
+  const it=ITEMS[id]||(G.expedition||[]).concat(G.stash||[]).find(x=>x.id===id);
+  if(!it) return;
+  const box=document.getElementById("popbox");
+  const who=CLASSES[it.cls]?CLASSES[it.cls].name:(it.cls==="any"?"All-class":it.cls||"");
+  box.innerHTML="<h3>"+(it.q||"")+" "+it.n+"</h3><div>"+who+" · "+(SLOTN[it.slot]||it.slot)+"</div><div style='margin-top:8px'>"+statLine(it.st)+"</div><div class='sys' style='margin-top:8px'>Sell "+(it.val||0)+"g</div><button type='button' id='popx'>Close</button>";
+  document.getElementById("pop").className="on";
+  document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
+}
+document.addEventListener("click",e=>{
+  const el=e.target.closest&&e.target.closest(".itemlink");
+  if(el){ e.preventDefault(); openItem(el.getAttribute("data-iid")); }
+});
 const d=n=>1+Math.floor(Math.random()*n);
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -537,7 +562,7 @@ function winFight(){
   if(want && (budget>0||must)){
     const loot=dropLoot();
     G.expedition.push(loot); if(budget>0) G.lootBudget=budget-1;
-    say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: <b><u>"+loot.q+" "+loot.n+"</u></b> · bag "+G.expedition.length+" · drops left "+(G.lootBudget||0));
+    say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: "+itemLink(loot)+" · bag "+G.expedition.length+" · drops left "+(G.lootBudget||0));
   } else {
     say("<span class='good'>Clear.</span> +"+gold+"g. No drop.");
   }
@@ -616,7 +641,7 @@ function printWorn(u){
   say("<b>"+u.name+"</b> ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] set "+(u._setOn?"ON ("+setBonus(u.cls||"warrior")+")":"off"));
   SLOTS.forEach(sl=>{
     const it=u.gear&&u.gear[sl];
-    if(it) say(SLOTN[sl]+": <b><u>"+it.q+" "+it.n+"</u></b> — "+statLine(it.st));
+    if(it) say(SLOTN[sl]+": "+itemLink(it)+" — "+statLine(it.st));
     else say(SLOTN[sl]+": empty");
   });
 }
@@ -635,7 +660,7 @@ function reviewLoot(){
 }
 function inspectItem(it,u,bag,back){
   const worn=u.gear&&u.gear[it.slot];
-  say("<b><u>"+(it.q?it.q+" ":"")+it.n+"</u></b>");
+  say(itemLink(it));
   say((CLASSES[it.cls]?CLASSES[it.cls].name:it.cls||"any")+" · "+SLOTN[it.slot]+(it.val?" · sell "+it.val+"g":""));
   say("This piece: "+statLine(it.st));
   if(worn){ say("Worn now: <b>"+worn.q+" "+worn.n+"</b> — "+statLine(worn.st)); say("If you swap: "+deltaLine(it.st,worn.st)); }
@@ -648,7 +673,7 @@ function inspectItem(it,u,bag,back){
       u.gear[it.slot]=it;
       if(idx>=0) arr.splice(idx,1);
       gearBonus(u); hud();
-      say("Equipped <b><u>"+it.n+"</u></b> on "+u.name+".");
+      say("Equipped "+itemLink(it)+" on "+u.name+".");
       back();
     }},
     {list:true,label:"Leave it",fn:back}
@@ -667,7 +692,7 @@ function fieldUnequipPick(){
   party().forEach(u=>SLOTS.forEach(sl=>{if(u.gear&&u.gear[sl]) slots.push({u,sl,it:u.gear[sl]});}));
   if(!slots.length){say("Nothing equipped.");return camp();}
   choices(slots.map(x=>({list:true,label:x.u.name+" · "+x.it.n,fn:()=>{
-    say("<b><u>"+x.it.n+"</u></b> on "+x.u.name);
+    say(itemLink(x.it)+" on "+x.u.name);
     say(SLOTN[x.sl]+" · "+statLine(x.it.st));
     choices([
       {list:true,label:"Unequip to bag",fn:()=>{G.expedition.push(x.it); delete x.u.gear[x.sl]; hud(); say("Unequipped "+x.it.n); fieldUnequipPick();}},
