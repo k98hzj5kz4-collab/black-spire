@@ -55,7 +55,12 @@ position:relative}
 .mini.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
 #log{height:96px;overflow:auto;padding:6px 14px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910;flex:0 0 auto}
 body[data-scene="hub"] #log,body[data-scene="world"] #log{height:100px}
-#log p{margin:0 0 6px}#log b u{color:#ffe08a;text-decoration-color:#c45cff}
+#log p{margin:0 0 6px}
+#log b u{color:#ffe08a;text-decoration-color:#c45cff}
+#log .q-Uncommon,#log .q-Uncommon b u{color:#6fbf7a!important}
+#log .q-Rare,#log .q-Rare b u{color:#5eb0ff!important}
+#log .q-Epic,#log .q-Epic b u{color:#c48aff!important}
+#log .q-Legendary,#log .q-Legendary b u{color:#f0c45a!important}
 .sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#ff7a8a}.good{color:#8ee09a}.rare{color:#ff9ae0}.skill{color:#cbb6ff}
 #choices{padding:8px 10px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#100c18;flex:0 0 auto;z-index:8}
 #choices.list{grid-template-columns:1fr}
@@ -168,7 +173,7 @@ const ZONES=RANKS.map((rank,i)=>({
   theme:["iron & oaths","teeth & sap","fever-bogs","salt dead","cinder knights","obsidian choir","dust warlords","thunder courts","thin reality","the appetite"][i],
   areas:["Approach","Outer","Inner","Sanctum"],
   red:["Blood Oath Hall","Crimson Den","Scarlet Mire","Red Tide Crypt","Ruby Kiln","Carmine Mirror","Sanguine Dune","Vermilion Spire","Red Veil","Crimson Heart"][i],
-  mult:1+i*0.75,
+  mult:1+i*0.45,
   trash:[["Oath-Drone","Gate Stalker","Levy Bound","Rust Raider"],["Sapling","Fang Runner","Thornkin","Howler"],["Fen-Tick","Mire Slug","Fever Imp","Bog Raider"],["Salt Wight","Vault Crawler","Brine Shade","Drowned Levy"],["Cinder Imp","Kiln Rat","Ash Knight","Spark Drone"],["Glass Wisp","Choir Drone","Mirror Tick","Obsidian Hound"],["Dust Jackal","Bone Runner","Waste Raider","Ash Nomad"],["Stormling","Bolt Wasp","Cloud Knight","Gale Drone"],["Rift Moth","Veil Tick","Thin-Man","Echo"],["Hunger Spawn","Tooth","Codex Mite","Appetite Drone"]][i],
   rares:[["Oathbreaker","Gilded Warden"],["Heartwood Alpha","Red Antler"],["Plague Heron","Fen Bride"],["Tide Reeve","Salt Saint"],["Kiln Widow","Cinder Duke"],["Choir Soloist","Black Mirror"],["Dust Khan","Bone Banner"],["Storm Jurist","Thunder Twin"],["Veil Heir","Name-Eater"],["First Hunger","Last Vow"]][i],
   bosses:null
@@ -410,7 +415,7 @@ let G=null;
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE);return r?JSON.parse(r):null;}catch(e){return null;}}
 function base(){return {hp:30,hpMax:30,mp:16,mpMax:16,atk:8,def:4,spd:6,int:5,spr:5,luk:5};}
-function makeMain(name){return Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],codex:[],gear:{},dead:false,gauge:0},base());}
+function makeMain(name){const m=Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],codex:[],gear:{},dead:false,gauge:0},base()); applyCodex(m); return m;}
 function hirePrice(cls,lv,extra){
   extra=extra||0;
   return 6 + lv*7 + extra*12 + (G&&G.best?G.best*3:0);
@@ -446,7 +451,11 @@ function gearBonus(u){
   u._affix=(SLOTS.map(sl=>u.gear&&u.gear[sl]&&u.gear[sl].affix).filter(Boolean));
   return add;
 }
-function stat(u,k){const b=gearBonus(u); return k==="hpMax"?u.hpMax+(b.hp||0):(u[k]||0)+(b[k]||0);}
+function stat(u,k){
+  const b=gearBonus(u); const c=u._cx||{};
+  if(k==="hpMax") return u.hpMax+(b.hp||0)+(c.hp||0);
+  return (u[k]||0)+(b[k]||0)+(c[k]||0);
+}
 function hud(){
   const all=party(),hp=all.reduce((a,u)=>a+Math.max(0,u.hp),0),hpm=all.reduce((a,u)=>a+stat(u,"hpMax"),0)||1;
   document.getElementById("top").textContent=(G.guild||"Hunter")+" · "+G.gold+"g · "+(G.zone!=null?ZONES[G.zone].rank:"hub");
@@ -507,6 +516,7 @@ function rollInnStock(){
 }
 function hub(){
   ensurePots();
+  if(mainU()) applyCodex(mainU());
   G.inArea=false;G.combat=null;G.outing=false;
   if(G.restockInn || !G.innStock || !G.innStock.length) rollInnStock();
   save();setScene("hub");hud();
@@ -574,13 +584,14 @@ function demonLordEvent(){
 }
 function areaDiff(){
   const ai=G.red?3:(G.area||0);
-  return ZONES[G.zone].mult * (1+ai*0.14) * (G.red?1.25:1);
+  return ZONES[G.zone].mult * (1+ai*0.10) * (G.red?1.22:1);
 }
 function foe(name,zi,opts){
   opts=opts||{};
-  const m=areaDiff()*(opts.boss?2.15:opts.rare?1.55:1);
+  const m=areaDiff()*(opts.boss?1.70:opts.rare?1.38:1);
   const hp=Math.round((16+zi*9)*m);
-  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((6+zi*2.2)*m),def:Math.round((2+zi)*m*0.55),spd:4+zi+(opts.rare||opts.unique?2:0),int:4+zi,spr:3+zi,boss:!!opts.boss,rare:!!opts.rare,unique:!!opts.unique,dead:false,gauge:0,marked:0};
+  const atkM=opts.boss?m*0.72:m;
+  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((6+zi*2.2)*atkM),def:Math.round((2+zi)*m*0.50),spd:4+zi+(opts.rare||opts.unique?2:0),int:4+zi,spr:3+zi,boss:!!opts.boss,rare:!!opts.rare,unique:!!opts.unique,dead:false,gauge:0,marked:0};
 }
 function pack(zi,boss){
   const z=ZONES[zi];
@@ -651,16 +662,23 @@ function tgt(cb){const es=G.combat.enemies.filter(e=>e.hp>0); if(es.length===1)r
   choices(es.map(e=>({label:e.name+" "+e.hp+"/"+e.hpMax,fn:()=>cb(e)})).concat([{label:"Back",fn:atb}]));}
 function phys(a,t,mult){
   let m=mult; if(a.row==="back")m*=0.7;
-  const fx=a._setFx||{};
+  const fx=a._setFx||{}; const cx=a._cx||{};
   if(t.marked)m*=(1.25+(fx.markPct||0)/100);
   if(fx.atkPct)m*=(1+fx.atkPct/100);
-  if(fx.crit&&d(100)<=fx.crit)m*=1.6;
-  const raw=Math.max(1,Math.floor((stat(a,"atk")*1.1+d(6))*m-t.def*0.35)); t.hp-=raw; return raw;
+  if(cx.atkPct)m*=(1+cx.atkPct/100);
+  const crit=(fx.crit||0)+(cx.crit||0);
+  if(crit&&d(100)<=crit)m*=1.6;
+  const raw=Math.max(1,Math.floor((stat(a,"atk")*1.1+d(6))*m-t.def*0.35)); t.hp-=raw;
+  if(cx.leech) a.hp=clamp(a.hp+Math.ceil(raw*cx.leech),0,stat(a,"hpMax"));
+  return raw;
 }
 function mag(a,t,mult){
-  const fx=a._setFx||{};
+  const fx=a._setFx||{}; const cx=a._cx||{};
   let m=mult; if(fx.boltPct)m*=(1+fx.boltPct/100); if(fx.vialPct)m*=(1+fx.vialPct/100);
-  const raw=Math.max(1,Math.floor((stat(a,"int")*1.25+d(6))*m-t.spr*0.25)); t.hp-=raw; return raw;
+  if(cx.atkPct)m*=(1+cx.atkPct/100);
+  const raw=Math.max(1,Math.floor((stat(a,"int")*1.25+d(6))*m-t.spr*0.25)); t.hp-=raw;
+  if(cx.leech) a.hp=clamp(a.hp+Math.ceil(raw*cx.leech),0,stat(a,"hpMax"));
+  return raw;
 }
 function act(u,sid,t){
   const S=SKILLS[sid]; if(S.mp){if(u.mp<S.mp){say("No MP");return ally(u);} u.mp-=S.mp;}
@@ -684,23 +702,61 @@ function act(u,sid,t){
 }
 function devourMenu(u){
   if(u.mp<8){say("Need 8 MP.");return ally(u);}
-  const es=G.combat.enemies.filter(e=>e.hp>0&&e.hp/e.hpMax<0.2);
-  if(!es.length){say("No prey under 20%.");return ally(u);}
+  const w=devourWindow(u);
+  const es=G.combat.enemies.filter(e=>e.hp>0&&e.hp/e.hpMax<w);
+  if(!es.length){say("No prey under "+Math.round(w*100)+"%.");return ally(u);}
   choices(es.map(e=>({label:"Devour "+e.name,fn:()=>doDevour(u,e)})).concat([{label:"Back",fn:()=>ally(u)}]));
 }
+function devourWindow(u){return 0.20+((u._cx&&u._cx.devour)||0);}
 function doDevour(u,e){
   u.mp-=8;G.combat.devourUsed=true;
-  if(e.boss){const c=e.hp/e.hpMax<0.1?75:50; say("No execute. Steal "+c+"%."); if(d(100)<=c)steal(); else say("Slips.");}
+  const w=devourWindow(u);
+  if(e.boss){const c=e.hp/e.hpMax<w/2?75:50; say("No execute. Steal "+c+"%."); if(d(100)<=c)steal(); else say("Slips.");}
   else {say("<span class='rare'>Devour.</span>"); e.hp=0; steal();}
   after();
 }
-function traitInfo(n){
-  if(n==="Iron Pulse") return {title:n, body:"Stolen vitality. Each rank +4 Max HP (applied when gained / on rebirth)."};
-  if(n==="Quick Vein") return {title:n, body:"Stolen speed. Each rank +1 SPD."};
-  if(n==="Shadow Edge") return {title:n, body:"You learn Power Blow. A heavy strike (extra ATK scaling). Ranks deepen the Codex only."};
-  if(n==="Blood Tick") return {title:n, body:"You learn Drain. Deal INT damage and heal for half. Ranks deepen the Codex only."};
-  if(/Appetite$/.test(n)) return {title:n, body:"A zone's hunger branded into you. Flavor trait. Higher rank = a thicker mark. No extra combat math yet."};
-  return {title:n, body:"A Devoured remnant. Kept in the Codex through death."};
+const TRAITS=[
+  {n:"Iron Pulse",hp:4,body:"Each rank +4 Max HP. Applied on steal and rebirth."},
+  {n:"Quick Vein",spd:1,body:"Each rank +1 SPD so you act sooner in the ATB."},
+  {n:"Shadow Edge",sid:"power",atkPct:5,body:"Learn Power Blow. Each rank +5% physical damage."},
+  {n:"Blood Tick",sid:"drain",leech:0.06,body:"Learn Drain. Each rank +6% lifesteal on phys and magic hits."},
+  {n:"Stone Hide",defPct:4,body:"Each rank −4% damage taken from foes."},
+  {n:"Ash Spark",sid:"bolt",int:1,body:"Learn Dark Bolt. Each rank +1 INT."},
+  {n:"Keen Eye",luk:2,body:"Each rank +2 LUK (feeds crit chance with other sources)."},
+  {n:"Second Mouth",devour:0.04,body:"Each rank +4% Devour HP window (base 20%)."},
+  {n:"Last Grin",save:1,body:"Once per fight: if you would die, stay at 1 HP."},
+  {n:"Guard Brand",sid:"taunt",def:1,body:"Learn Taunt. Each rank +1 DEF."},
+  {n:"Green Thread",sid:"mend",spr:1,body:"Learn Mend. Each rank +1 SPR."},
+  {n:"Hunter Mark",sid:"mark",luk:1,body:"Learn Mark. Each rank +1 LUK."},
+  {n:"Mist Step",sid:"veil",spd:1,body:"Learn Veil. Each rank +1 SPD."},
+  {n:"Soft Hymn",sid:"hymn",spr:1,body:"Learn Hymn. Each rank +1 SPR."},
+  {n:"Oath Light",sid:"smite",atk:1,body:"Learn Smite (heavy strike). Each rank +1 ATK."},
+  {n:"Palm Echo",sid:"flurry",atkPct:3,body:"Learn Flurry. Each rank +3% damage."},
+  {n:"Ward Skin",sid:"ward",defPct:2,body:"Learn Ward. Each rank −2% damage taken."},
+  {n:"G Appetite",gold:0.08,body:"Gateworks. Each rank +8% gold from fights."},
+  {n:"F Appetite",thorns:2,body:"Fangwood. Each rank +2 thorns when struck."},
+  {n:"E Appetite",spr:1,body:"Emberfen. Each rank +1 SPR."},
+  {n:"D Appetite",mp:2,body:"Drowned Vaults. Each rank +2 Max MP."},
+  {n:"C Appetite",atk:1,body:"Cinderreach. Each rank +1 ATK."},
+  {n:"B Appetite",crit:4,body:"Blackglass. Each rank +4% crit."},
+  {n:"A Appetite",atkPct:3,body:"Ashwastes. Each rank +3% ATK."},
+  {n:"S Appetite",spd:1,int:1,body:"Stormspire. Each rank +1 SPD and +1 INT."},
+  {n:"S+ Appetite",devour:0.03,defPct:2,body:"Veilmarch. Devour window +3% and 2% soak per rank."},
+  {n:"S++ Appetite",leech:0.04,atkPct:4,devour:0.05,body:"Heart. Lifesteal, ATK%, wider maw per rank."}
+];
+function traitDef(n){return TRAITS.find(t=>t.n===n)||{n:n,body:"A Devoured remnant. Kept through death."};}
+function traitInfo(n){const T=traitDef(n); return {title:T.n, body:T.body+(T.sid?" Teaches a skill.":"")};}
+function applyCodex(m){
+  const cx={hp:0,atk:0,def:0,spd:0,int:0,spr:0,luk:0,atkPct:0,defPct:0,leech:0,devour:0,gold:0,thorns:0,mp:0,crit:0,save:0};
+  (m.codex||[]).forEach(c=>{
+    const T=traitDef(c.n), r=c.r||1;
+    ["hp","atk","def","spd","int","spr","luk","atkPct","defPct","leech","devour","gold","thorns","mp","crit","save"].forEach(k=>{if(T[k])cx[k]+=T[k]*r;});
+    if(cx.save>1)cx.save=1;
+    if(T.sid&&!m.skills.includes(T.sid)) m.skills.push(T.sid);
+  });
+  m._cx=cx;
+  m.mpMax=16+cx.mp;
+  if(m.mp>m.mpMax)m.mp=m.mpMax;
 }
 function traitLink(n,r){
   return "<button type='button' class='itemlink traitlink' data-tn=\""+n.replace(/"/g,"")+"\" data-tr=\""+(r||1)+"\"><b><u>"+n+(r?(" R"+r):"")+"</u></b></button>";
@@ -713,18 +769,20 @@ function openTrait(n,r){
   document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
 }
 function steal(){
-  const m=mainU(), pool=[{n:"Iron Pulse"},{n:"Quick Vein"},{n:"Shadow Edge",sid:"power"},{n:"Blood Tick",sid:"drain"},{n:ZONES[G.zone].rank+" Appetite"}];
-  const item=pick(pool), have=m.codex.find(c=>c.n===item.n);
+  const m=mainU();
+  const zoneTrait=(["G","F","E","D","C","B","A","S","S+","S++"][G.zone||0])+" Appetite";
+  const pool=TRAITS.filter(t=>!/Appetite$/.test(t.n)).concat(TRAITS.filter(t=>t.n===zoneTrait));
+  const item=pick(pool.length?pool:TRAITS), have=m.codex.find(c=>c.n===item.n);
   if(have){
     if(have.r<3){have.r++; say("Codex "+traitLink(have.n,have.r)+" ranked up. Tap the name.","rare");}
     else say("Capped: "+traitLink(have.n,have.r));
   } else {
-    m.codex.push({n:item.n,r:1,sid:item.sid});
-    if(item.sid&&!m.skills.includes(item.sid))m.skills.push(item.sid);
-    if(item.n==="Quick Vein")m.spd++;
-    if(item.n==="Iron Pulse"){m.hpMax+=4;m.hp+=4;}
+    m.codex.push({n:item.n,r:1,sid:item.sid||null});
     say("<span class='rare'>Devoured</span> "+traitLink(item.n,1)+" — tap the name.");
   }
+  applyCodex(m);
+  if(item.hp) m.hp=Math.min(stat(m,"hpMax"), m.hp+(item.hp*(have&&have.r?1:1)));
+  hud();
 }
 function enemy(e){
   const ts=living(); if(!ts.length)return wipe();
@@ -734,14 +792,16 @@ function enemy(e){
   if(t.defending)dmg=Math.max(1,Math.floor(dmg*0.5));
   if(t.ward){dmg=Math.max(1,Math.floor(dmg*0.75));t.ward--;}
   if(t._setFx&&t._setFx.defPct)dmg=Math.max(1,Math.floor(dmg*(1-t._setFx.defPct/100)));
+  if(t._cx&&t._cx.defPct)dmg=Math.max(1,Math.floor(dmg*(1-t._cx.defPct/100)));
   t.defending=0;t.hp-=dmg; say(e.name+" hits "+t.name+" <span class='hurt'>"+dmg+"</span>.");
-  if(t._setFx&&t._setFx.thorns&&e.hp>0){e.hp=Math.max(0,e.hp-t._setFx.thorns); say(t.name+"'s set bites back "+t._setFx.thorns+".");}
+  const th=(t._setFx&&t._setFx.thorns||0)+((t._cx&&t._cx.thorns)||0);
+  if(th&&e.hp>0){e.hp=Math.max(0,e.hp-th); say(t.name+" bites back "+th+".");}
   if(t.hp<=0){t.hp=0;down(t);} after();
 }
 function down(u){
   const fail=d(100)<=(G.combat.boss?90:85);
   if(!fail){u.hp=1;say(u.name+" clings.","good");return;}
-  const savior=party().find(x=>x._setFx&&x._setFx.save&&!x.dead);
+  const savior=party().find(x=>((x._setFx&&x._setFx.save)||(x._cx&&x._cx.save))&&!x.dead);
   if(savior && G.combat && !G.combat._clericSave){
     G.combat._clericSave=1; u.hp=1; u.dead=false;
     say(savior.name+"'s set refuses the grave. "+u.name+" stays at 1 HP.","good");
@@ -783,7 +843,7 @@ function winFight(){
   });
   if(mainU().dead||mainU().hp<=0) return rebirth();
   let gold=5+G.zone*3+(G.combat.boss?22:0)+(G.combat.enemies.some(e=>e.unique)?8:0);
-  gold=Math.round(gold*(G.combat.goldMult||1));
+  gold=Math.round(gold*(G.combat.goldMult||1)*(1+((mainU()._cx&&mainU()._cx.gold)||0)));
   G.gold+=gold;
   G.expedition=G.expedition||[];
   const budget=G.lootBudget||0;
@@ -910,8 +970,7 @@ function rebirth(){
   say("Rebirth Lv1. Codex stays.");
   const old=mainU(),codex=old.codex.slice(),name=old.name;
   G.roster=G.roster.filter(r=>!r.main);
-  const m=makeMain(name); m.codex=codex;
-  codex.forEach(c=>{if(c.n==="Quick Vein")m.spd+=c.r; if(c.n==="Iron Pulse"){m.hpMax+=4*c.r;m.hp=m.hpMax;} if(c.sid&&!m.skills.includes(c.sid))m.skills.push(c.sid);});
+  const m=makeMain(name); m.codex=codex; applyCodex(m); m.hp=stat(m,"hpMax");
   G.roster.unshift(m); G.party=G.party.filter(id=>id!=="main"); G.party.unshift("main");
   G.inArea=false;G.combat=null; save(); choices([{label:"Wake in Spirefoot",fn:hub}]);
 }
