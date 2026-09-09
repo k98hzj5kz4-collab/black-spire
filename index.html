@@ -297,6 +297,39 @@ const SKILLS={
   dread:{n:"Dread",g:"Wards",mp:5},doom:{n:"Doom",g:"Arcane",mp:7},curse:{n:"Curse",g:"Arcane",mp:5},pact:{n:"Pact",g:"Wards",mp:0},
   loaded:{n:"Loaded Dice",g:"Wards",mp:4},jackpot:{n:"Jackpot",g:"Wards",mp:6}
 };
+const SKILL_HELP={
+  strike:"Basic hit. No MP.",
+  taunt:"Foes swing at you.",
+  bash:"A hard strike.",
+  cleave:"Hit every living foe.",
+  power:"Heavy single hit.",
+  mark:"Next hits on that foe deal more.",
+  shot:"Cheap ranged poke.",
+  stab:"Backstab. Stronger from the back row.",
+  veil:"Step to the back row.",
+  flurry:"Hit all foes.",
+  palm:"A sharp strike.",
+  smite:"Heavy strike.",
+  aegis:"Ward yourself. Set may heal.",
+  mend:"Heal one ally. Costs MP.",
+  ward:"Take less damage for two hits.",
+  bolt:"INT magic bolt.",
+  drain:"Magic that heals you for half.",
+  hymn:"Raise party ATK. Some sets also heal.",
+  sting:"A light strike.",
+  vial:"INT flask damage.",
+  mist:"Fade back. Some sets Ward you.",
+  dread:"Demon Lord taunt.",
+  doom:"Heavy INT nuke.",
+  curse:"Mark plus magic chip.",
+  pact:"Pay 6 HP for 8 MP.",
+  loaded:"Next clear: more gold, luckier rarity.",
+  jackpot:"+1 drop budget, double the next drop, Rare floor."
+};
+function skillInfo(sid){
+  const S=SKILLS[sid]||{n:sid,mp:"?",g:""};
+  return {title:S.n, body:(SKILL_HELP[sid]||"A learned art.")+" · "+S.mp+" MP · "+(S.g||"")};
+}
 const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",demonlord:"#8a1020",warlock:"#5a2080",jester:"#e8c040",foe:"#b03040",boss:"#f0c45a"};
 function svg(kind,c){
   c=c||"#f6efe3";
@@ -524,7 +557,7 @@ function hub(){
   say("<span class='sys'>Gold "+G.gold+" · Roster "+G.roster.length+"/10 · Codex "+mainU().codex.length+" · Best "+G.bestRank+"</span>");
   choices([
     {label:"World",icon:"🗺️",fn:world},{label:"Inn",icon:"🛏️",fn:inn},{label:"Party",icon:"👥",fn:barracks},
-    {label:"Gear",icon:"🎒",fn:gearMenu},{label:"Stats",icon:"📊",fn:statsMenu},{label:"Church",icon:"⛪",fn:church},
+    {label:"Gear",icon:"🎒",fn:gearMenu},{label:"Skills",fn:skillsHub},{label:"Church",icon:"⛪",fn:church},
     {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Title",fn:()=>{save();titleMenu();}}
   ]);
 }
@@ -981,6 +1014,7 @@ function camp(){
     {label:"Review loot",icon:"🎒",fn:reviewLoot},
     {label:"Worn gear",icon:"🛡️",fn:()=>wornMenu(camp)},
     {label:"Spend points",icon:"📊",fn:campStatsPick},
+    {label:"Skills",fn:()=>skillsHub(camp)},
     {label:"Unequip",icon:"📤",fn:fieldUnequipPick},
     {label:"Continue",icon:"➡️",fn:()=>(G._afterCamp||areaClear)()}
   ]);
@@ -1136,6 +1170,26 @@ function barracks(){
       barracks();
     }};
   }).concat([{label:"Done",fn:hub}]));
+}
+function skillsHub(back){
+  back=back||hub;
+  say("Whose skills?");
+  choices(party().map(u=>({list:true,label:u.name+" · "+(u.skills||[]).length+" arts",fn:()=>skillsOf(u,back)})).concat([{label:"Spend stat points",fn:statsMenu},{label:"Back",fn:back}]));
+}
+function skillsOf(u,back){
+  back=back||hub;
+  const list=u.skills||[];
+  if(!list.length){say(u.name+" knows nothing.");return skillsHub(back);}
+  say("<b>"+u.name+"</b> — tap an art.");
+  list.forEach(sid=>{const I=skillInfo(sid); say("<b>"+I.title+"</b> — "+I.body);});
+  choices(list.map(sid=>({list:true,label:skillInfo(sid).title+" · "+((SKILLS[sid]||{}).mp||0)+" MP",fn:()=>{
+    const I=skillInfo(sid);
+    const box=document.getElementById("popbox");
+    box.innerHTML="<h3>"+I.title+"</h3><div style='margin-top:8px'>"+I.body+"</div><button type='button' id='popx'>Close</button>";
+    document.getElementById("pop").className="on";
+    document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
+    skillsOf(u,back);
+  }})).concat([{label:"Back",fn:()=>skillsHub(back)}]));
 }
 function statsMenu(){
   const m=mainU(); if(m.unspent<=0){say("No points.");return choices([{label:"Back",fn:hub}]);}
