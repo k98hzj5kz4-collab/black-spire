@@ -19,14 +19,15 @@ body[data-scene="hub"] #stage{background:radial-gradient(ellipse at 50% 0%,#5a3a
 body[data-scene="world"] #stage{background:radial-gradient(ellipse at 50% 10%,#245a4a 0%,transparent 55%),linear-gradient(#102018,#0a1210 70%,#1a2a18)}
 body[data-scene="combat"] #stage{background:radial-gradient(ellipse at 50% 0%,#6a2048 0%,transparent 50%),linear-gradient(#2a1020,#100810 65%,#3a1810)}
 body[data-scene="camp"] #stage{background:radial-gradient(ellipse at 50% 80%,#c45a20 0%,transparent 45%),linear-gradient(#1a1020,#0c0a10)}
-body[data-scene="combat"] #stage{max-height:36dvh;overflow:hidden;padding-top:6px}
-body[data-scene="combat"] .card{width:62px !important;padding:4px 3px !important}
-body[data-scene="combat"] .face{width:34px !important;height:34px !important;margin-bottom:2px}
-body[data-scene="combat"] .face svg{width:16px !important;height:16px !important}
-body[data-scene="combat"] .role{display:none !important}
-body[data-scene="combat"] .name{font-size:10px}
-body[data-scene="combat"] .rowcards{gap:6px;margin-bottom:4px}
-body[data-scene="combat"] + #log, body[data-scene="combat"] #log{height:52px}
+body[data-scene="combat"] #stage,body[data-scene="camp"] #stage{max-height:24dvh;overflow:hidden;padding-top:4px;flex:0 0 auto}
+body[data-scene="combat"] .card,body[data-scene="camp"] .card{width:52px !important;padding:3px 2px !important;border-radius:12px}
+body[data-scene="combat"] .face,body[data-scene="camp"] .face{width:26px !important;height:26px !important;margin-bottom:1px}
+body[data-scene="combat"] .face svg,body[data-scene="camp"] .face svg{width:13px !important;height:13px !important}
+body[data-scene="combat"] .role,body[data-scene="camp"] .role{display:none !important}
+body[data-scene="combat"] .name,body[data-scene="camp"] .name{font-size:9px}
+body[data-scene="combat"] .nums,body[data-scene="camp"] .nums{font-size:8px}
+body[data-scene="combat"] .rowcards,body[data-scene="camp"] .rowcards{gap:4px;margin-bottom:2px}
+body[data-scene="combat"] #log,body[data-scene="camp"] #log{height:132px}
 #log,#choices{position:relative;z-index:10}
 header{padding:12px 16px 10px;border-bottom:1px solid #4a3a22;background:linear-gradient(#1c1428,#120e1c);box-shadow:0 8px 24px #0008}
 h1{margin:0;font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f0c45a55}
@@ -52,7 +53,7 @@ position:relative}
 .nums{font-size:10px;color:#e8dcc4;margin-top:3px}
 .mini{height:5px;background:#1c1826;border-radius:99px;margin-top:5px;overflow:hidden}.mini i{display:block;height:100%;background:linear-gradient(90deg,#ff8a9a,var(--hp))}
 .mini.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
-#log{height:72px;overflow:auto;padding:6px 14px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910;flex:0 0 auto}
+#log{height:96px;overflow:auto;padding:6px 14px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910;flex:0 0 auto}
 body[data-scene="hub"] #log,body[data-scene="world"] #log{height:100px}
 #log p{margin:0 0 6px}#log b u{color:#ffe08a;text-decoration-color:#c45cff}
 .sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#ff7a8a}.good{color:#8ee09a}.rare{color:#ff9ae0}.skill{color:#cbb6ff}
@@ -756,6 +757,7 @@ function winFight(){
   }
 }
 function midWave(){
+  setScene("camp"); hud();
   choices([
     {label:"Review loot",fn:()=>reviewLootTo(midWave)},
     {label:"Next fight",fn:()=>G._afterCamp()}
