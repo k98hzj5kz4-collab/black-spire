@@ -170,15 +170,33 @@ const CLASSES={
   alchemist:{name:"Alchemist",w:{int:2,spd:2},skills:["vial","mist"]}
 };
 const CLASS_IDS=Object.keys(CLASSES);
-const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"]};
+CLASSES.demonlord={name:"Demon Lord",w:{hp:3,atk:3,int:2},skills:["dread","doom"]};
+CLASSES.warlock={name:"Warlock",w:{int:3,spr:2,luk:1},skills:["curse","pact"]};
+const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"],demonlord:["Vhorr","Ashketh"],warlock:["Mael","Yssra"]};
 const SLOTS=["weapon","head","body","hands","acc"];
 const SLOTN={weapon:"Weapon",head:"Head",body:"Body",hands:"Hands",acc:"Charm"};
 const SET_PREFIX=[["Oath","Fang","Fever","Brine","Cinder","Glass","Dust","Storm","Veil","Heart"],["Bastion","Thorn","Mire","Tide","Forge","Mirror","Bone","Sky","Rift","Crown"]];
 function setId(zi,cls,setn){return "z"+zi+"_"+cls+"_"+setn;}
 function setName(zi,cls,setn){return SET_PREFIX[setn][zi]+" "+CLASSES[cls].name;}
-function setBonus(cls){
-  return ({vanguard:"+12% DEF",warrior:"+12% ATK",ranger:"Mark +15%",rogue:"+8% LUK crit",monk:"Flurry +1",paladin:"Aegis mends 6%",cleric:"Mend +20%",darkmage:"Bolt +15%",bard:"Hymn +ATK",alchemist:"Vial burn"})[cls];
+function setPower(zi){return 8+(zi||0)*2;}
+function parseSet(sid){const m=/^z(\d+)_(.+)_\d+$/.exec(sid||"");return m?{zi:+m[1],cls:m[2]}:null;}
+const SET_FX_TABLE=[
+  {vanguard:{text:"Oath: Auto-Taunt · 8% soak",taunt:1,defPct:8},warrior:{text:"Oath: +8% ATK",atkPct:8},ranger:{text:"Oath: Marks +8%",markPct:8},rogue:{text:"Oath: 8% crit",crit:8},monk:{text:"Oath: Sweeps +8%",atkPct:8},paladin:{text:"Oath: Aegis heals 8%",aegis:8},cleric:{text:"Oath: Mend +8%",mendPct:8},darkmage:{text:"Oath: Bolt +8%",boltPct:8},bard:{text:"Oath: Hymn +1 ATK",hymn:1},alchemist:{text:"Oath: Vial +8%",vialPct:8}},
+  {vanguard:{text:"Fang: Thorns 3 when hit",thorns:3,defPct:6},warrior:{text:"Fang: +10% ATK vs marked",atkPct:10,markPct:6},ranger:{text:"Fang: Marks +12%",markPct:12},rogue:{text:"Fang: 12% crit",crit:12},monk:{text:"Fang: Flurry extra tick",flurry:1,atkPct:8},paladin:{text:"Fang: Aegis 8% + thorns 2",aegis:8,thorns:2},cleric:{text:"Fang: Mend +10% and Ward",mendPct:10,mendWard:1},darkmage:{text:"Fang: Drain drinks deeper",boltPct:8},bard:{text:"Fang: Hymn +1, heal 2",hymn:1,hymnHeal:2},alchemist:{text:"Fang: Vial +10%",vialPct:10}},
+  {vanguard:{text:"Fever: Auto-Taunt + start Ward",taunt:1,startWard:1,defPct:10},warrior:{text:"Fever: +12% ATK",atkPct:12},ranger:{text:"Fever: Marks +12%",markPct:12},rogue:{text:"Fever: 12% crit",crit:12},monk:{text:"Fever: Sweeps +12%",atkPct:12},paladin:{text:"Fever: Aegis 12%",aegis:12},cleric:{text:"Fever: Once/fight death save",save:1,mendPct:10},darkmage:{text:"Fever: Bolt +12%",boltPct:12},bard:{text:"Fever: Hymn +2 ATK",hymn:2},alchemist:{text:"Fever: Mist Wards you",vialPct:8,mistWard:1}},
+  {vanguard:{text:"Brine: Auto-Taunt · 14% soak",taunt:1,defPct:14},warrior:{text:"Brine: +14% ATK",atkPct:14},ranger:{text:"Brine: Marks +14%",markPct:14},rogue:{text:"Brine: 14% crit",crit:14},monk:{text:"Brine: Extra flurry tick",flurry:1,atkPct:10},paladin:{text:"Brine: Aegis 14%",aegis:14},cleric:{text:"Brine: Save + Mend 14%",save:1,mendPct:14},darkmage:{text:"Brine: Bolt +14%",boltPct:14},bard:{text:"Brine: Hymn +2, heal 3",hymn:2,hymnHeal:3},alchemist:{text:"Brine: Vial +14%",vialPct:14}},
+  {vanguard:{text:"Cinder: Burn-thorns 4",thorns:4,defPct:12},warrior:{text:"Cinder: +16% ATK",atkPct:16},ranger:{text:"Cinder: Marks +16%",markPct:16},rogue:{text:"Cinder: 16% crit",crit:16},monk:{text:"Cinder: Sweeps +16%",atkPct:16},paladin:{text:"Cinder: Aegis 16%",aegis:16},cleric:{text:"Cinder: Mend +16%",mendPct:16},darkmage:{text:"Cinder: Bolt +16%",boltPct:16},bard:{text:"Cinder: Hymn +2 ATK",hymn:2},alchemist:{text:"Cinder: Vial +16% · Mist Ward",vialPct:16,mistWard:1}},
+  {vanguard:{text:"Glass: Reflect thorns 5 · Auto-Taunt",taunt:1,thorns:5,defPct:10},warrior:{text:"Glass: +18% ATK",atkPct:18},ranger:{text:"Glass: Marks +18%",markPct:18},rogue:{text:"Glass: 18% crit",crit:18},monk:{text:"Glass: Sweeps +18%",atkPct:18},paladin:{text:"Glass: Aegis 18%",aegis:18},cleric:{text:"Glass: Save once · Mend 12%",save:1,mendPct:12},darkmage:{text:"Glass: Bolt +18%",boltPct:18},bard:{text:"Glass: Hymn +3 ATK",hymn:3},alchemist:{text:"Glass: Vial +18%",vialPct:18}},
+  {vanguard:{text:"Dust: Auto-Taunt · 16% soak",taunt:1,defPct:16},warrior:{text:"Dust: +20% ATK",atkPct:20},ranger:{text:"Dust: Marks +20%",markPct:20},rogue:{text:"Dust: 20% crit",crit:20},monk:{text:"Dust: Flurry +20%",atkPct:20,flurry:1},paladin:{text:"Dust: Aegis 20%",aegis:20},cleric:{text:"Dust: Save · Mend 20%",save:1,mendPct:20},darkmage:{text:"Dust: Bolt +20%",boltPct:20},bard:{text:"Dust: Hymn +3, heal 4",hymn:3,hymnHeal:4},alchemist:{text:"Dust: Vial +20%",vialPct:20}},
+  {vanguard:{text:"Storm: Auto-Taunt · 18% soak",taunt:1,defPct:18},warrior:{text:"Storm: +22% ATK",atkPct:22},ranger:{text:"Storm: Marks +22%",markPct:22},rogue:{text:"Storm: 22% crit",crit:22},monk:{text:"Storm: Sweeps +22%",atkPct:22},paladin:{text:"Storm: Aegis 22%",aegis:22},cleric:{text:"Storm: Save · Mend 22%",save:1,mendPct:22},darkmage:{text:"Storm: Bolt +22%",boltPct:22},bard:{text:"Storm: Hymn +3 ATK",hymn:3},alchemist:{text:"Storm: Vial +22% · Mist Ward",vialPct:22,mistWard:1}},
+  {vanguard:{text:"Veil: Auto-Taunt · 20% soak",taunt:1,defPct:20},warrior:{text:"Veil: +24% ATK",atkPct:24},ranger:{text:"Veil: Marks +24%",markPct:24},rogue:{text:"Veil: 24% crit",crit:24},monk:{text:"Veil: Sweeps +24%",atkPct:24},paladin:{text:"Veil: Aegis 24%",aegis:24},cleric:{text:"Veil: Save · Mend 24%",save:1,mendPct:24},darkmage:{text:"Veil: Bolt +24%",boltPct:24},bard:{text:"Veil: Hymn +4 ATK",hymn:4},alchemist:{text:"Veil: Vial +24%",vialPct:24}},
+  {vanguard:{text:"Heart: Auto-Taunt · 26% soak · thorns 6",taunt:1,defPct:26,thorns:6},warrior:{text:"Heart: +26% ATK",atkPct:26},ranger:{text:"Heart: Marks +26%",markPct:26},rogue:{text:"Heart: 26% crit",crit:26},monk:{text:"Heart: Sweeps +26% + tick",atkPct:26,flurry:1},paladin:{text:"Heart: Aegis 26%",aegis:26},cleric:{text:"Heart: Save · Mend 26%",save:1,mendPct:26},darkmage:{text:"Heart: Bolt +26%",boltPct:26},bard:{text:"Heart: Hymn +4, heal 6",hymn:4,hymnHeal:6},alchemist:{text:"Heart: Vial +26% · Mist Ward",vialPct:26,mistWard:1}}
+];
+function setFxFor(zi,cls){
+  const row=SET_FX_TABLE[zi]||SET_FX_TABLE[0];
+  return row[cls]||row.warrior||{text:"Set hums.",atkPct:8};
 }
+function setBonus(cls,zi){return setFxFor(zi||0,cls).text;}
 const ZONE_UNIQUES=[
   [{n:"Oathbreaker",slot:"weapon",affix:"On hit +2 true",st:{atk:3},sk:null},{n:"Key-Ring Helm",slot:"head",affix:"+1 party DEF",st:{def:3},sk:null},{n:"Levy Heart",slot:"acc",affix:"Start fight +4 HP",st:{hp:4},sk:null},{n:"Portcullis Plate",slot:"body",affix:"First hit -30%",st:{def:4},sk:null}],
   [{n:"Antler Bow",slot:"weapon",affix:"Mark lasts +1",st:{atk:2,spd:2},sk:"mark"},{n:"Sap Circlet",slot:"head",affix:"Regen 2 HP/wave",st:{spr:2},sk:null},{n:"Red Hart Charm",slot:"acc",affix:"+8% crit",st:{luk:4},sk:null},{n:"Thorn Mail",slot:"body",affix:"Return 2 dmg",st:{def:3},sk:null}],
@@ -226,9 +244,10 @@ const SKILLS={
   flurry:{n:"Flurry",g:"Sweeps",mp:5},palm:{n:"Palm",g:"Strikes",mp:3},smite:{n:"Smite",g:"Strikes",mp:5},
   aegis:{n:"Aegis",g:"Wards",mp:5},mend:{n:"Mend",g:"Mends",mp:4},ward:{n:"Ward",g:"Wards",mp:4},
   bolt:{n:"Dark Bolt",g:"Arcane",mp:5},drain:{n:"Drain",g:"Arcane",mp:6},hymn:{n:"Hymn",g:"Wards",mp:5},
-  sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5}
+  sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5},
+  dread:{n:"Dread",g:"Wards",mp:5},doom:{n:"Doom",g:"Arcane",mp:7},curse:{n:"Curse",g:"Arcane",mp:5},pact:{n:"Pact",g:"Wards",mp:0}
 };
-const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",foe:"#b03040",boss:"#f0c45a"};
+const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",demonlord:"#8a1020",warlock:"#5a2080",foe:"#b03040",boss:"#f0c45a"};
 function svg(kind,c){
   c=c||"#f6efe3";
   const paths={
@@ -264,7 +283,7 @@ function svg(kind,c){
   };
   return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">${paths[kind]||paths.star}</svg>`;
 }
-const FACEKIND={devourer:"void",vanguard:"shield",warrior:"sword",ranger:"bow",rogue:"dagger",monk:"fist",paladin:"cross",cleric:"star",darkmage:"orb",bard:"note",alchemist:"vial",foe:"skull",boss:"skull"};
+const FACEKIND={devourer:"void",vanguard:"shield",warrior:"sword",ranger:"bow",rogue:"dagger",monk:"fist",paladin:"cross",cleric:"star",darkmage:"orb",bard:"note",alchemist:"vial",demonlord:"skull",warlock:"orb",foe:"skull",boss:"skull"};
 function icKind(label){
   const L=label.toLowerCase();
   if(L.includes("world")||L.includes("map")) return "map";
@@ -347,10 +366,23 @@ function save(){try{localStorage.setItem(SAVE,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE);return r?JSON.parse(r):null;}catch(e){return null;}}
 function base(){return {hp:30,hpMax:30,mp:16,mpMax:16,atk:8,def:4,spd:6,int:5,spr:5,luk:5};}
 function makeMain(name){return Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],codex:[],gear:{},dead:false,gauge:0},base());}
-function makeHire(cls){
+function hirePrice(cls,lv,extra){
+  extra=extra||0;
+  return 6 + lv*7 + extra*12 + (G&&G.best?G.best*3:0);
+}
+function makeHire(cls,lv){
+  lv=lv||1;
   const C=CLASSES[cls],s=base();
   Object.entries(C.w).forEach(([k,v])=>{if(k==="hp"){s.hp=s.hpMax=22+v*3;}else s[k]=(s[k]||0)+v*2;});
-  return Object.assign({id:uid(),name:pick(NAMES[cls]),cls,main:false,lv:1,xp:0,unspent:0,row:"front",skills:C.skills.slice(),gear:{},dead:false,gauge:0},s);
+  const skills=C.skills.slice();
+  let extra=0;
+  if(lv>=5 && Math.random()<0.35){const bonus=pick(["power","mend","ward","veil"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
+  if(lv>=10 && Math.random()<0.25){const bonus=pick(["cleave","smite","bolt"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
+  for(let i=1;i<lv;i++){s.hpMax+=3;s.hp+=3;s.atk++; if(i%3===0)s.def++; if(i%4===0)s.spd++; if(i%5===0){s.int++;s.spr++;}}
+  const h=Object.assign({id:uid(),name:pick(NAMES[cls]),cls,main:false,lv,xp:0,unspent:0,row:"front",skills,gear:{},dead:false,gauge:0,price:0},s);
+  h.price=hirePrice(cls,lv,extra);
+  h.extra=extra;
+  return h;
 }
 function party(){return G.party.map(id=>G.roster.find(r=>r.id===id)).filter(Boolean);}
 function living(){return party().filter(u=>!u.dead&&u.hp>0);}
@@ -358,7 +390,14 @@ function mainU(){return G.roster.find(r=>r.main);}
 function gearBonus(u){
   const add={hp:0,atk:0,def:0,spd:0,int:0,spr:0,luk:0}; const sets={};
   SLOTS.forEach(sl=>{const it=u.gear&&u.gear[sl]; if(!it)return; Object.entries(it.st||{}).forEach(([k,v])=>add[k]=(add[k]||0)+v); if(it.set) sets[it.set]=(sets[it.set]||0)+1;});
-  u._setOn=null; Object.entries(sets).forEach(([sid,n])=>{if(n>=4)u._setOn=sid;});
+  u._setOn=null; u._setFx=null;
+  Object.entries(sets).forEach(([sid,n])=>{
+    if(n>=4){
+      u._setOn=sid;
+      const p=parseSet(sid);
+      u._setFx=setFxFor(p?p.zi:0, p?p.cls:(u.cls||"warrior"));
+    }
+  });
   u._affix=(SLOTS.map(sl=>u.gear&&u.gear[sl]&&u.gear[sl].affix).filter(Boolean));
   return add;
 }
@@ -414,7 +453,11 @@ function goHub(){
 function rollInnStock(){
   const n=3+Math.floor(Math.random()*3);
   const pool=CLASS_IDS.slice().sort(()=>Math.random()-0.5);
-  G.innStock=pool.slice(0,n);
+  const cap=Math.max(1,(mainU()&&mainU().lv||1)+2+(G.best||0));
+  G.innStock=pool.slice(0,n).map(cls=>{
+    const lv=clamp(1+Math.floor(Math.random()*cap),1,cap);
+    return makeHire(cls,lv);
+  });
   G.restockInn=false;
 }
 function hub(){
@@ -452,7 +495,25 @@ function startArea(zi,ai,red){
   G.waves=red?5:(2+d(3)); G.wave=0; G.setBand=ai<2?0:1;
   G.lootBudget=red?2:(1+d(2));
   say((red?"<span class='rare'>RED GATE.</span> Guaranteed high loot. ":"")+"Zone "+z.rank+" area "+G.areaName+". "+G.waves+" waves + boss. Party loot cap "+G.lootBudget+".");
+  if(zi>=6 && Math.random()<0.01 && G.roster.length<10 && !G.roster.some(r=>r.cls==="demonlord")) return demonLordEvent();
   nextWave();
+}
+function takeRare(cls,lv,back){
+  const h=makeHire(cls,lv); h.price=0;
+  G.roster.push(h);
+  if(G.party.length<5) G.party.push(h.id);
+  save(); hud();
+  say("<span class='rare'>"+h.name+" the "+CLASSES[cls].name+" walks with you.</span>");
+  back();
+}
+function demonLordEvent(){
+  setScene("camp");
+  say("<span class='rare'>The area boss already lies dead.</span> Steam off the corpse. A stranger steps out of the dark.");
+  say("\"I was promised a throne. You can keep the meat. I want the climb.\" A <b>Demon Lord</b>.");
+  choices([
+    {list:true,label:"Let them join",fn:()=>takeRare("demonlord",Math.max(12,(mainU().lv||1)+3),nextWave)},
+    {list:true,label:"Turn them away",fn:nextWave}
+  ]);
 }
 function areaDiff(){
   const ai=G.red?3:(G.area||0);
@@ -488,6 +549,11 @@ function nextWave(){ G.wave++; startFight(pack(G.zone,false),false); }
 function startFight(enemies,boss){
   G.combat={enemies,boss,devourUsed:false,taunt:null};
   living().forEach(u=>u.gauge=stat(u,"spd")); enemies.forEach(e=>e.gauge=e.spd);
+  living().forEach(u=>{
+    gearBonus(u);
+    if(u._setFx&&u._setFx.taunt){G.combat.taunt=u.id; say(u.name+"'s set pulls every eye. Auto-Taunt.");}
+    if(u._setFx&&u._setFx.startWard){u.ward=(u.ward||0)+1; say(u.name+" opens behind a Ward.");}
+  });
   if(enemies.some(e=>e.rare)) say("<span class='rare'>A rare foe answers.</span>");
   say("<span class='hurt'>"+(boss?"BOSSES · ":"Wave "+G.wave+"/"+G.waves+" · ")+enemies.map(e=>e.name).join(", ")+"</span>");
   renderStage(); atb();
@@ -518,7 +584,7 @@ function sk(u){
     return {label:S.n+" · "+S.mp+" MP",fn:()=>{
       if(u.mp<S.mp){say("No MP.");return ally(u);}
       if(s==="mend") return choices(living().map(t=>({label:"Mend "+t.name,fn:()=>act(u,s,t)})).concat([{label:"Back",fn:()=>ally(u)}]));
-      if(["taunt","ward","hymn","aegis","mist","veil"].includes(s)) return act(u,s,null);
+      if(["taunt","ward","hymn","aegis","mist","veil","dread","pact"].includes(s)) return act(u,s,null);
       tgt(t=>act(u,s,t));
     }};
   });
@@ -526,16 +592,30 @@ function sk(u){
 }
 function tgt(cb){const es=G.combat.enemies.filter(e=>e.hp>0); if(es.length===1)return cb(es[0]);
   choices(es.map(e=>({label:e.name+" "+e.hp+"/"+e.hpMax,fn:()=>cb(e)})).concat([{label:"Back",fn:atb}]));}
-function phys(a,t,mult){let m=mult; if(a.row==="back")m*=0.7; if(t.marked)m*=1.25; const raw=Math.max(1,Math.floor((stat(a,"atk")*1.1+d(6))*m-t.def*0.35)); t.hp-=raw; return raw;}
-function mag(a,t,mult){const raw=Math.max(1,Math.floor((stat(a,"int")*1.25+d(6))*mult-t.spr*0.25)); t.hp-=raw; return raw;}
+function phys(a,t,mult){
+  let m=mult; if(a.row==="back")m*=0.7;
+  const fx=a._setFx||{};
+  if(t.marked)m*=(1.25+(fx.markPct||0)/100);
+  if(fx.atkPct)m*=(1+fx.atkPct/100);
+  if(fx.crit&&d(100)<=fx.crit)m*=1.6;
+  const raw=Math.max(1,Math.floor((stat(a,"atk")*1.1+d(6))*m-t.def*0.35)); t.hp-=raw; return raw;
+}
+function mag(a,t,mult){
+  const fx=a._setFx||{};
+  let m=mult; if(fx.boltPct)m*=(1+fx.boltPct/100); if(fx.vialPct)m*=(1+fx.vialPct/100);
+  const raw=Math.max(1,Math.floor((stat(a,"int")*1.25+d(6))*m-t.spr*0.25)); t.hp-=raw; return raw;
+}
 function act(u,sid,t){
   const S=SKILLS[sid]; if(S.mp){if(u.mp<S.mp){say("No MP");return ally(u);} u.mp-=S.mp;}
   let msg="";
-  if(sid==="taunt"){G.combat.taunt=u.id;msg=u.name+" taunts.";}
-  else if(sid==="ward"||sid==="aegis"){u.ward=2;msg=u.name+" wards."; if(sid==="aegis"&&u._setOn)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*0.06),0,stat(u,"hpMax"));}
-  else if(sid==="hymn"){living().forEach(p=>p.atk+=1);msg=u.name+" hymns.";}
-  else if(sid==="veil"||sid==="mist"){u.row="back";msg=u.name+" fades.";}
-  else if(sid==="mend"){const h=Math.floor((8+stat(u,"spr"))*(u._setOn&&u.cls==="cleric"?1.2:1)); t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); msg=u.name+" mends "+t.name+" +"+h;}
+  if(sid==="taunt"||sid==="dread"){G.combat.taunt=u.id;msg=u.name+(sid==="dread"?" looses Dread.":" taunts.");}
+  else if(sid==="pact"){u.hp=Math.max(1,u.hp-6);u.mp=clamp(u.mp+8,0,u.mpMax);msg=u.name+" cuts a pact (−6 HP, +8 MP).";}
+  else if(sid==="doom"){msg=u.name+" dooms "+t.name+" for "+mag(u,t,1.45);}
+  else if(sid==="curse"){t.marked=1;msg=u.name+" curses "+t.name+" for "+mag(u,t,0.9);}
+  else if(sid==="ward"||sid==="aegis"){u.ward=2;msg=u.name+" wards."; const ap=(u._setFx&&u._setFx.aegis)||0; if(sid==="aegis"&&ap)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*(ap/100)),0,stat(u,"hpMax"));}
+  else if(sid==="hymn"){const add=(u._setFx&&u._setFx.hymn)||1; const hh=(u._setFx&&u._setFx.hymnHeal)||0; living().forEach(p=>{p.atk+=add; if(hh)p.hp=clamp(p.hp+hh,0,stat(p,"hpMax"));});msg=u.name+" hymns +"+add+" ATK"+(hh?(" +"+hh+" HP"):"")+".";}
+  else if(sid==="veil"||sid==="mist"){u.row="back";msg=u.name+" fades."; if(sid==="mist"&&u._setFx&&u._setFx.mistWard)u.ward=(u.ward||0)+1;}
+  else if(sid==="mend"){const extra=1+((u._setFx&&u._setFx.mendPct)||0)/100; const h=Math.floor((8+stat(u,"spr"))*extra); t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); if(u._setFx&&u._setFx.mendWard)t.ward=(t.ward||0)+1; msg=u.name+" mends "+t.name+" +"+h;}
   else if(sid==="bolt"||sid==="vial"){msg=u.name+" burns "+t.name+" for "+mag(u,t,sid==="bolt"?1.2:1);}
   else if(sid==="drain"){const n=mag(u,t,0.8); u.hp=clamp(u.hp+Math.ceil(n/2),0,stat(u,"hpMax")); msg=u.name+" drains "+n;}
   else if(sid==="cleave"||sid==="flurry"){G.combat.enemies.filter(e=>e.hp>0).forEach(e=>phys(u,e,0.7)); msg=u.name+" sweeps.";}
@@ -594,12 +674,20 @@ function enemy(e){
   let dmg=Math.max(1,e.atk+d(4)-Math.floor(stat(t,"def")*0.45));
   if(t.defending)dmg=Math.max(1,Math.floor(dmg*0.5));
   if(t.ward){dmg=Math.max(1,Math.floor(dmg*0.75));t.ward--;}
+  if(t._setFx&&t._setFx.defPct)dmg=Math.max(1,Math.floor(dmg*(1-t._setFx.defPct/100)));
   t.defending=0;t.hp-=dmg; say(e.name+" hits "+t.name+" <span class='hurt'>"+dmg+"</span>.");
+  if(t._setFx&&t._setFx.thorns&&e.hp>0){e.hp=Math.max(0,e.hp-t._setFx.thorns); say(t.name+"'s set bites back "+t._setFx.thorns+".");}
   if(t.hp<=0){t.hp=0;down(t);} after();
 }
 function down(u){
   const fail=d(100)<=(G.combat.boss?90:85);
   if(!fail){u.hp=1;say(u.name+" clings.","good");return;}
+  const savior=party().find(x=>x._setFx&&x._setFx.save&&!x.dead);
+  if(savior && G.combat && !G.combat._clericSave){
+    G.combat._clericSave=1; u.hp=1; u.dead=false;
+    say(savior.name+"'s set refuses the grave. "+u.name+" stays at 1 HP.","good");
+    return;
+  }
   u.dead=true; say(u.main?"<span class='hurt'>Main down.</span>":"<span class='hurt'>"+u.name+" down.</span>");
 }
 function after(){ if(!G.combat)return; if(!G.combat.enemies.some(e=>e.hp>0))return winFight(); if(!living().length)return wipe(); atb(); }
@@ -646,6 +734,8 @@ function winFight(){
     say("<span class='good'>Clear.</span> +"+gold+"g. No drop.");
   }
   living().forEach(u=>{
+    const cap=[4,8,12,16,22,28,34,40,46,55][G.zone||0]+(G.area||0)+(G.red?3:0);
+    if(u.lv>cap){say(u.name+" outlevels this rank (cap Lv "+cap+"). No XP.");return;}
     u.xp+=6+G.zone*2;
     if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; say(u.name+" Lv"+u.lv+" (+2 pts)","good");}
   });
@@ -712,7 +802,7 @@ function restSkillTgt(u){
   const ts=party().filter(t=>!t.dead);
   choices(ts.map(t=>({list:true,label:"Mend "+t.name+" "+t.hp+"/"+stat(t,"hpMax"),fn:()=>{
     u.mp-=SKILLS.mend.mp;
-    const h=Math.floor((8+stat(u,"spr"))*(u._setOn&&u.cls==="cleric"?1.2:1));
+    const h=Math.floor((8+stat(u,"spr"))*(1+((u._setFx&&u._setFx.mendPct)||0)/100));
     t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); hud();
     say(u.name+" mends "+t.name+" +"+h+" · MP "+u.mp);
     restCampChoices();
@@ -721,7 +811,21 @@ function restSkillTgt(u){
 function areaClear(){
   G.inArea=false; const z=ZONES[G.zone]; if(G.zone>G.best){G.best=G.zone;G.bestRank=z.rank;}
   say("<span class='good'>"+G.areaName+" falls.</span>");
+  if(G.zone>=1 && G.zone<=5 && Math.random()<0.01 && G.roster.length<10 && !G.roster.some(r=>r.cls==="warlock")) return warlockCage();
+  areaClearMenu();
+}
+function areaClearMenu(){
+  const z=ZONES[G.zone];
   choices([{label:"Another area in "+z.name,fn:()=>enterZone(G.zone)},{label:"World map",fn:world},{label:"Return to Spirefoot",fn:goHub}]);
+}
+function warlockCage(){
+  setScene("camp");
+  say("<span class='rare'>A cage in the wreck.</span> Something in it is still breathing.");
+  say("A <b>Warlock</b> looks up. \"The lock is cheap. The debt is not. Cut me out.\"");
+  choices([
+    {list:true,label:"Break the cage",fn:()=>takeRare("warlock",Math.max(6,(mainU().lv||1)+2),areaClearMenu)},
+    {list:true,label:"Leave them",fn:areaClearMenu}
+  ]);
 }
 function wipe(){
   say("<span class='hurt'>Wipe. Limp home.</span>"); G.inArea=false;G.combat=null;
@@ -778,7 +882,7 @@ function deltaLine(nw,old){
   return bits.length?bits.join("  "):"same stats";
 }
 function printWorn(u){
-  say("<b>"+u.name+"</b> ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] set "+(u._setOn?"ON ("+setBonus(u.cls||"warrior")+")":"off"));
+  say("<b>"+u.name+"</b> ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] set "+(u._setFx?("ON — "+u._setFx.text):"off"));
   SLOTS.forEach(sl=>{
     const it=u.gear&&u.gear[sl];
     if(it) say(SLOTN[sl]+": "+itemLink(it)+" — "+statLine(it.st));
@@ -817,7 +921,7 @@ function inspectItem(it,u,bag,back){
       if(idx>=0) arr.splice(idx,1);
       if(it.sk && !u.skills.includes(it.sk)){u.skills.push(it.sk); say(u.name+" learns "+it.sk+" from the unique.");}
       gearBonus(u); hud();
-      if(u._setOn) say("<span class='rare'>SET 4/5</span> — "+setBonus(u.cls||it.cls||"warrior"));
+      if(u._setFx) say("<span class='rare'>SET 4/5</span> — "+u._setFx.text);
       say("Equipped "+itemLink(it)+" on "+u.name+".");
       back();
     }},
@@ -872,18 +976,22 @@ function confirmExtract(){
   G.expedition=[]; G.picked=[]; G.outing=false; G.restockInn=true; save(); hub();
 }
 function inn(){
-  if(!G.innStock||!G.innStock.length) rollInnStock();
-  const board=(G.innStock||[]).map(k=>CLASSES[k].name).join(" · ");
-  say("<b>Inn board</b> (today): "+board+" · Gold "+G.gold+" · Roster "+G.roster.length+"/10");
+  if(!G.innStock||!G.innStock.length||typeof G.innStock[0]==="string") rollInnStock();
+  say("<b>Inn board</b> · Gold "+G.gold+" · Roster "+G.roster.length+"/10");
   if(G.roster.length>=10){say("Roster is full.");return choices([{label:"Back",list:true,fn:hub}]);}
-  const opts=(G.innStock||[]).map(k=>({list:true,label:"Hire "+CLASSES[k].name+" — 8g",fn:()=>{
-    if(G.gold<8){say("<b>Not enough gold.</b>");return inn();}
-    G.gold-=8; const h=makeHire(k); G.roster.push(h);
-    if(G.party.length<5) G.party.push(h.id);
-    save(); hud();
-    say("<b>"+h.name+"</b> the <b>"+CLASSES[k].name+"</b> signs on. Roster "+G.roster.length+"/10. Gold "+G.gold+".");
-    inn();
-  }}));
+  const opts=(G.innStock||[]).map((h,i)=>{
+    const extra=h.extra?(" +"+h.extra+" skill"):"";
+    return {list:true,label:h.name+" "+CLASSES[h.cls].name+" Lv"+h.lv+extra+" — "+h.price+"g",fn:()=>{
+      if(G.gold<h.price){say("<b>Not enough gold.</b> Need "+h.price+"g.");return inn();}
+      G.gold-=h.price;
+      G.innStock.splice(i,1);
+      G.roster.push(h);
+      if(G.party.length<5) G.party.push(h.id);
+      save(); hud();
+      say("<b>"+h.name+"</b> Lv"+h.lv+" "+CLASSES[h.cls].name+" for "+h.price+"g. Gold "+G.gold+".");
+      inn();
+    }};
+  });
   opts.push({label:"Back",list:true,fn:hub});
   choices(opts);
 }
