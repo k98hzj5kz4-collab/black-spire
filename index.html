@@ -213,7 +213,8 @@ const CLASSES={
 const CLASS_IDS=Object.keys(CLASSES);
 CLASSES.demonlord={name:"Demon Lord",w:{hp:3,atk:3,int:2},skills:["dread","doom"]};
 CLASSES.warlock={name:"Warlock",w:{int:3,spr:2,luk:1},skills:["curse","pact"]};
-const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"],demonlord:["Vhorr","Ashketh"],warlock:["Mael","Yssra"]};
+CLASSES.jester={name:"Jester",w:{luk:4,spd:2,int:1},skills:["loaded","jackpot"]};
+const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"],demonlord:["Vhorr","Ashketh"],warlock:["Mael","Yssra"],jester:["Puck","Nimble"]};
 const SLOTS=["weapon","head","body","hands","acc"];
 const SLOTN={weapon:"Weapon",head:"Head",body:"Body",hands:"Hands",acc:"Charm"};
 const SET_PREFIX=[["Oath","Fang","Fever","Brine","Cinder","Glass","Dust","Storm","Veil","Heart"],["Bastion","Thorn","Mire","Tide","Forge","Mirror","Bone","Sky","Rift","Crown"]];
@@ -286,9 +287,10 @@ const SKILLS={
   aegis:{n:"Aegis",g:"Wards",mp:5},mend:{n:"Mend",g:"Mends",mp:4},ward:{n:"Ward",g:"Wards",mp:4},
   bolt:{n:"Dark Bolt",g:"Arcane",mp:5},drain:{n:"Drain",g:"Arcane",mp:6},hymn:{n:"Hymn",g:"Wards",mp:5},
   sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5},
-  dread:{n:"Dread",g:"Wards",mp:5},doom:{n:"Doom",g:"Arcane",mp:7},curse:{n:"Curse",g:"Arcane",mp:5},pact:{n:"Pact",g:"Wards",mp:0}
+  dread:{n:"Dread",g:"Wards",mp:5},doom:{n:"Doom",g:"Arcane",mp:7},curse:{n:"Curse",g:"Arcane",mp:5},pact:{n:"Pact",g:"Wards",mp:0},
+  loaded:{n:"Loaded Dice",g:"Wards",mp:4},jackpot:{n:"Jackpot",g:"Wards",mp:6}
 };
-const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",demonlord:"#8a1020",warlock:"#5a2080",foe:"#b03040",boss:"#f0c45a"};
+const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",demonlord:"#8a1020",warlock:"#5a2080",jester:"#e8c040",foe:"#b03040",boss:"#f0c45a"};
 function svg(kind,c){
   c=c||"#f6efe3";
   const paths={
@@ -324,7 +326,7 @@ function svg(kind,c){
   };
   return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">${paths[kind]||paths.star}</svg>`;
 }
-const FACEKIND={devourer:"void",vanguard:"shield",warrior:"sword",ranger:"bow",rogue:"dagger",monk:"fist",paladin:"cross",cleric:"star",darkmage:"orb",bard:"note",alchemist:"vial",demonlord:"skull",warlock:"orb",foe:"skull",boss:"skull"};
+const FACEKIND={devourer:"void",vanguard:"shield",warrior:"sword",ranger:"bow",rogue:"dagger",monk:"fist",paladin:"cross",cleric:"star",darkmage:"orb",bard:"note",alchemist:"vial",demonlord:"skull",warlock:"orb",jester:"note",foe:"skull",boss:"skull"};
 function icKind(label){
   const L=label.toLowerCase();
   if(L.includes("world")||L.includes("map")) return "map";
@@ -538,15 +540,26 @@ function startArea(zi,ai,red){
   G.lootBudget=red?2:(1+d(2));
   say((red?"<span class='rare'>RED GATE.</span> Guaranteed high loot. ":"")+"Zone "+z.rank+" area "+G.areaName+". "+G.waves+" waves + boss. Party loot cap "+G.lootBudget+".");
   if(zi>=6 && Math.random()<0.01 && G.roster.length<10 && !G.roster.some(r=>r.cls==="demonlord")) return demonLordEvent();
+  if(Math.random()<0.10 && G.roster.length<10 && !G.roster.some(r=>r.cls==="jester"&&!r.dead)) return jesterEvent();
   nextWave();
 }
 function takeRare(cls,lv,back){
+  if(G.roster.some(r=>r.cls===cls&&!r.dead)){say("You already keep one "+CLASSES[cls].name+".");return back();}
   const h=makeHire(cls,lv); h.price=0;
   G.roster.push(h);
   if(G.party.length<5) G.party.push(h.id);
   save(); hud();
   say("<span class='rare'>"+h.name+" the "+CLASSES[cls].name+" walks with you.</span>");
   back();
+}
+function jesterEvent(){
+  setScene("camp");
+  say("<span class='rare'>A painted wagon blocks the path.</span> Dice click. Someone has already counted your pockets.");
+  say("A <b>Jester</b> grins. \"The table is crooked. I know which way. Hire the cheat.\"");
+  choices([
+    {list:true,label:"Let the cheat join",fn:()=>takeRare("jester",Math.max(4,(mainU().lv||1)+1),nextWave)},
+    {list:true,label:"Walk around the wagon",fn:nextWave}
+  ]);
 }
 function demonLordEvent(){
   setScene("camp");
@@ -626,7 +639,7 @@ function sk(u){
     return {label:S.n+" · "+S.mp+" MP",fn:()=>{
       if(u.mp<S.mp){say("No MP.");return ally(u);}
       if(s==="mend") return choices(living().map(t=>({label:"Mend "+t.name,fn:()=>act(u,s,t)})).concat([{label:"Back",fn:()=>ally(u)}]));
-      if(["taunt","ward","hymn","aegis","mist","veil","dread","pact"].includes(s)) return act(u,s,null);
+      if(["taunt","ward","hymn","aegis","mist","veil","dread","pact","loaded","jackpot"].includes(s)) return act(u,s,null);
       tgt(t=>act(u,s,t));
     }};
   });
@@ -652,6 +665,8 @@ function act(u,sid,t){
   let msg="";
   if(sid==="taunt"||sid==="dread"){G.combat.taunt=u.id;msg=u.name+(sid==="dread"?" looses Dread.":" taunts.");}
   else if(sid==="pact"){u.hp=Math.max(1,u.hp-6);u.mp=clamp(u.mp+8,0,u.mpMax);msg=u.name+" cuts a pact (−6 HP, +8 MP).";}
+  else if(sid==="loaded"){G.combat.goldMult=(G.combat.goldMult||1)+1; G.combat.luckDrop=1; msg=u.name+" loads the dice. Next purse and drop lean lucky.";}
+  else if(sid==="jackpot"){G.lootBudget=(G.lootBudget||0)+1; G.combat.doubleDrop=1; G.combat.forceQ="Rare"; msg=u.name+" rigs the table. Extra drop + double on the next hit.";}
   else if(sid==="doom"){msg=u.name+" dooms "+t.name+" for "+mag(u,t,1.45);}
   else if(sid==="curse"){t.marked=1;msg=u.name+" curses "+t.name+" for "+mag(u,t,0.9);}
   else if(sid==="ward"||sid==="aegis"){u.ward=2;msg=u.name+" wards."; const ap=(u._setFx&&u._setFx.aegis)||0; if(sid==="aegis"&&ap)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*(ap/100)),0,stat(u,"hpMax"));}
@@ -735,7 +750,9 @@ function down(u){
 function after(){ if(!G.combat)return; if(!G.combat.enemies.some(e=>e.hp>0))return winFight(); if(!living().length)return wipe(); atb(); }
 function rollQuality(force){
   if(force) return force;
-  const r=Math.random();
+  if(G.combat&&G.combat.forceQ){const q=G.combat.forceQ; G.combat.forceQ=null; return q;}
+  let r=Math.random();
+  if(G.combat&&G.combat.luckDrop) r*=0.45;
   if(r<0.006) return "Legendary";
   if(r<0.03) return "Epic";
   if(r<0.20) return "Rare";
@@ -763,15 +780,21 @@ function winFight(){
     }
   });
   if(mainU().dead||mainU().hp<=0) return rebirth();
-  const gold=5+G.zone*3+(G.combat.boss?22:0)+(G.combat.enemies.some(e=>e.unique)?8:0); G.gold+=gold;
+  let gold=5+G.zone*3+(G.combat.boss?22:0)+(G.combat.enemies.some(e=>e.unique)?8:0);
+  gold=Math.round(gold*(G.combat.goldMult||1));
+  G.gold+=gold;
   G.expedition=G.expedition||[];
   const budget=G.lootBudget||0;
   const must=!!(G.red&&G.combat.boss);
-  const want=must || (budget>0 && (G.combat.boss || Math.random()<0.4));
-  if(want && (budget>0||must)){
+  const luckWant=!!(G.combat.luckDrop||G.combat.doubleDrop);
+  const want=must || luckWant || (budget>0 && (G.combat.boss || Math.random()<0.4));
+  const doubles=!!G.combat.doubleDrop;
+  if(want && (budget>0||must||luckWant)){
     const loot=dropLoot();
-    G.expedition.push(loot); if(budget>0) G.lootBudget=budget-1;
-    say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: "+itemLink(loot)+" · bag "+G.expedition.length+" · drops left "+(G.lootBudget||0));
+    G.expedition.push(loot); if(budget>0) G.lootBudget=Math.max(0,(G.lootBudget||1)-1);
+    let extra="";
+    if(doubles){const loot2=dropLoot(); G.expedition.push(loot2); extra=" + "+itemLink(loot2);}
+    say("<span class='good'>Clear.</span> +"+gold+"g. Dropped: "+itemLink(loot)+extra+" · bag "+G.expedition.length+" · drops left "+(G.lootBudget||0));
   } else {
     say("<span class='good'>Clear.</span> +"+gold+"g. No drop.");
   }
