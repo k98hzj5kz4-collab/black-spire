@@ -97,6 +97,46 @@ input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:10px;bor
 <div id="pop"><div class="box" id="popbox"></div></div>
 <script>
 const SAVE="blackspire_zones_v1";
+const POT_TIERS=[
+  {n:"Minor",need:0,hp:18,mp:8,hpG:8,mpG:10},
+  {n:"Lesser",need:1,hp:32,mp:14,hpG:16,mpG:18},
+  {n:"Greater",need:2,hp:50,mp:22,hpG:28,mpG:32},
+  {n:"High",need:3,hp:72,mp:34,hpG:48,mpG:52},
+  {n:"Sovereign",need:5,hp:110,mp:55,hpG:80,mpG:88}
+];
+function ensurePots(){
+  if(!G) return;
+  if(!G.pots||typeof G.pots==="number"){
+    const n=typeof G.pots==="number"?G.pots:0;
+    G.pots={hp:[n,0,0,0,0],mp:[0,0,0,0,0]};
+  }
+  G.pots.hp=G.pots.hp||[0,0,0,0,0];
+  G.pots.mp=G.pots.mp||[0,0,0,0,0];
+}
+function potUnlocked(i){return (G.best||0)>=POT_TIERS[i].need;}
+function potCount(){ensurePots(); return G.pots.hp.reduce((a,b)=>a+b,0)+G.pots.mp.reduce((a,b)=>a+b,0);}
+function potionMenu(u){
+  ensurePots();
+  const opts=[];
+  POT_TIERS.forEach((T,i)=>{
+    if(G.pots.hp[i]>0) opts.push({list:true,label:T.n+" HP +"+T.hp+" ×"+G.pots.hp[i],fn:()=>usePot("hp",i,u,true)});
+    if(G.pots.mp[i]>0) opts.push({list:true,label:T.n+" MP +"+T.mp+" ×"+G.pots.mp[i],fn:()=>usePot("mp",i,u,true)});
+  });
+  if(!opts.length){say("No potions.");return ally(u);}
+  opts.push({label:"Back",fn:()=>ally(u)});
+  choices(opts);
+}
+function usePot(kind,i,u,inFight){
+  ensurePots();
+  if(!G.pots[kind][i]){say("None left.");return inFight?ally(u):restCampChoices();}
+  G.pots[kind][i]--;
+  const T=POT_TIERS[i];
+  if(kind==="hp") u.hp=clamp(u.hp+T.hp,0,stat(u,"hpMax"));
+  else u.mp=clamp(u.mp+T.mp,0,u.mpMax);
+  hud();
+  say(u.name+" drinks "+T.n+" "+kind.toUpperCase()+".");
+  if(inFight) after(); else restCampChoices();
+}
 const ITEMS={};
 function remember(it){if(it&&it.id) ITEMS[it.id]=it; return it;}
 function itemLink(it){
@@ -440,7 +480,7 @@ function titleMenu(){
 function newGame(){
   say("Name the Devourer.");
   choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
-    G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
+    G={name:n||"Kaizo",guild:"",gold:50,pots:{hp:[2,0,0,0,0],mp:[1,0,0,0,0]},debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
     G.roster=[makeMain(G.name)];G.party=["main"];
     choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
   }}]);
@@ -462,6 +502,7 @@ function rollInnStock(){
   G.restockInn=false;
 }
 function hub(){
+  ensurePots();
   G.inArea=false;G.combat=null;G.outing=false;
   if(G.restockInn || !G.innStock || !G.innStock.length) rollInnStock();
   save();setScene("hub");hud();
@@ -575,7 +616,7 @@ function ally(u){
   hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+u.mpMax+(u._setOn?" · SET":""));
   const opts=[{label:"Attack",icon:"⚔️",fn:()=>tgt(t=>act(u,"strike",t))},{label:"Skills",icon:"✨",fn:()=>sk(u)},
     {label:"Defend",icon:"🛡️",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,u.mpMax);say(u.name+" guards.");after();}},
-    {label:"Potion",icon:"🧪",fn:()=>{if(!G.pots){say("None.");return ally(u);}G.pots--;u.hp=clamp(u.hp+18,0,stat(u,"hpMax"));say("Heal.");after();}}];
+    {label:"Potion",icon:"🧪",fn:()=>potionMenu(u)}];
   if(u.main&&!G.combat.devourUsed) opts.splice(3,0,{label:"Devour",icon:"🕳️",fn:()=>devourMenu(u)});
   choices(opts);
 }
@@ -786,14 +827,18 @@ function restCampChoices(){
   ]);
 }
 function restPotion(){
-  if(!G.pots){say("No potions.");return restCampChoices();}
-  const hurt=party().filter(u=>!u.dead&&u.hp<stat(u,"hpMax"));
-  if(!hurt.length){say("No one is hurt.");return restCampChoices();}
-  choices(hurt.map(u=>({list:true,label:u.name+" "+u.hp+"/"+stat(u,"hpMax"),fn:()=>{
-    G.pots--; u.hp=clamp(u.hp+18,0,stat(u,"hpMax")); hud();
-    say(u.name+" drinks. HP "+u.hp+"/"+stat(u,"hpMax")+" · pots "+G.pots);
-    restCampChoices();
-  }})).concat([{label:"Back",fn:restCampChoices}]));
+  ensurePots();
+  if(!potCount()){say("No potions.");return restCampChoices();}
+  const opts=[];
+  POT_TIERS.forEach((T,i)=>{
+    if(G.pots.hp[i]>0) opts.push({list:true,label:T.n+" HP +"+T.hp+" ×"+G.pots.hp[i],fn:()=>restPotPick("hp",i)});
+    if(G.pots.mp[i]>0) opts.push({list:true,label:T.n+" MP +"+T.mp+" ×"+G.pots.mp[i],fn:()=>restPotPick("mp",i)});
+  });
+  opts.push({label:"Back",fn:restCampChoices});
+  choices(opts);
+}
+function restPotPick(kind,i){
+  choices(party().filter(u=>!u.dead).map(u=>({list:true,label:u.name+" HP "+u.hp+" MP "+u.mp,fn:()=>usePot(kind,i,u,false)})).concat([{label:"Back",fn:restPotion}]));
 }
 function restSkillPick(){
   const casters=living().filter(u=>u.skills.includes("mend")&&u.mp>=(SKILLS.mend.mp));
@@ -1015,7 +1060,7 @@ function statsMenu(){
   choices(keys.map(([k,l])=>({label:"+ "+l+" ("+m[k]+")",fn:()=>{m[k]+=k.includes("Max")?4:1; if(k==="hpMax")m.hp=m.hpMax; if(k==="mpMax")m.mp=m.mpMax; m.unspent--; statsMenu();}})).concat([{label:"Back",fn:hub}]));
 }
 function gearMenu(){
-  say("Stash "+G.stash.length+" · Pots "+G.pots);
+  ensurePots(); say("Stash "+G.stash.length+" · Pots "+potCount());
   choices([{label:"Worn gear",fn:()=>wornMenu(gearMenu)},{label:"Equip from stash",fn:equipFlow},{label:"Sell from stash",fn:sellMenu},{label:"Back",fn:hub}]);}
 function sellMenu(){
   if(!G.stash.length){say("Stash empty.");return gearMenu();}
@@ -1031,7 +1076,24 @@ function equipOnto(u){
   choices(items.map(it=>({list:true,label:(it.rare?"★ ":"")+it.n+" · "+SLOTN[it.slot],fn:()=>inspectItem(it,u,"stash",()=>equipOnto(u))})).concat([{label:"Done",fn:gearMenu}]));
 }
 function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hud(); hub();}},{label:"Back",fn:hub}]);}
-function shop(){choices([{label:"Potion 8g",fn:()=>{if(G.gold<8){say("No.");return shop();}G.gold-=8;G.pots++;hud();shop();}},{label:"Back",fn:hub}]);}
+function shop(){
+  ensurePots();
+  say("Shop. Best rank "+(G.bestRank||"G")+" unlocks higher flasks.");
+  const opts=[];
+  POT_TIERS.forEach((T,i)=>{
+    if(!potUnlocked(i)) return;
+    opts.push({list:true,label:T.n+" HP +"+T.hp+" — "+T.hpG+"g",fn:()=>{
+      if(G.gold<T.hpG){say("No gold.");return shop();}
+      G.gold-=T.hpG; G.pots.hp[i]++; hud(); say("Bought "+T.n+" HP."); shop();
+    }});
+    opts.push({list:true,label:T.n+" MP +"+T.mp+" — "+T.mpG+"g",fn:()=>{
+      if(G.gold<T.mpG){say("No gold.");return shop();}
+      G.gold-=T.mpG; G.pots.mp[i]++; hud(); say("Bought "+T.n+" MP."); shop();
+    }});
+  });
+  opts.push({label:"Back",fn:hub});
+  choices(opts);
+}
 function codex(){
   const c=mainU().codex;
   if(!c.length){say("Empty Codex.");return choices([{label:"Back",fn:hub}]);}
