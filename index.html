@@ -372,19 +372,39 @@ function hud(){
   document.getElementById("mpb").style.width=G.zone!=null?(10*(G.zone+1))+"%":"0%";
   renderStage();
 }
-function boot(){
-  G=load();
-  if(!G||!G.roster){
-    say("<b>BLACK SPIRE</b>");
-    say("Ten ranked wilds. You are the <span class='rare'>Devourer</span>.");
-    choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
-      G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
-      G.roster=[makeMain(G.name)];G.party=["main"];
-      choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
-    }}]); return;
+function titleMenu(){
+  G=null;
+  setScene("hub");
+  if(stage) stage.innerHTML="";
+  document.getElementById("top").textContent="Title";
+  document.getElementById("hpl").textContent="BLACK SPIRE";
+  document.getElementById("mpl").textContent="Menu";
+  document.getElementById("hpb").style.width="0%";
+  document.getElementById("mpb").style.width="0%";
+  const s=load();
+  say("<b>BLACK SPIRE</b>");
+  say("Ten ranked wilds. Devour. Climb.");
+  const opts=[];
+  if(s&&s.roster){
+    say("Save: <b>"+(s.name||"?")+"</b> of "+(s.guild||"?")+" · "+(s.gold||0)+"g · best "+(s.bestRank||"G"));
+    opts.push({label:"Continue",fn:()=>{G=s; say("Welcome back."); hub();}});
   }
-  say("Spirefoot. "+G.name+" of "+G.guild+".","sys"); hub();
+  opts.push({label:"New game",fn:newGame});
+  if(s&&s.roster) opts.push({label:"Delete save",danger:true,fn:()=>{
+    try{localStorage.removeItem(SAVE);}catch(e){}
+    say("Save burned."); titleMenu();
+  }});
+  choices(opts);
 }
+function newGame(){
+  say("Name the Devourer.");
+  choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
+    G={name:n||"Kaizo",guild:"",gold:50,pots:2,debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
+    G.roster=[makeMain(G.name)];G.party=["main"];
+    choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
+  }}]);
+}
+function boot(){ titleMenu(); }
 function goHub(){
   if((G.expedition&&G.expedition.length)||(G.outing&&G.picked&&G.picked.length)) return extractScreen();
   G.outing=false; G.picked=[]; G.expedition=G.expedition||[]; G.restockInn=true;
@@ -405,7 +425,8 @@ function hub(){
   choices([
     {label:"World",icon:"🗺️",fn:world},{label:"Inn",icon:"🛏️",fn:inn},{label:"Party",icon:"👥",fn:barracks},
     {label:"Gear",icon:"🎒",fn:gearMenu},{label:"Stats",icon:"📊",fn:statsMenu},{label:"Church",icon:"⛪",fn:church},
-    {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Save",icon:"💾",fn:()=>{save();say("Bound.");hub();}}
+    {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Save",icon:"💾",fn:()=>{save();say("Bound.");hub();}},
+    {label:"Title",fn:()=>{save();titleMenu();}}
   ]);
 }
 function world(){
