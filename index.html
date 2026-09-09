@@ -107,7 +107,7 @@ function openItem(id){
   if(!it) return;
   const box=document.getElementById("popbox");
   const who=CLASSES[it.cls]?CLASSES[it.cls].name:(it.cls==="any"?"All-class":it.cls||"");
-  box.innerHTML="<h3>"+(it.q||"")+" "+it.n+"</h3><div>"+who+" · "+(SLOTN[it.slot]||it.slot)+"</div><div style='margin-top:8px'>"+statLine(it.st)+"</div><div class='sys' style='margin-top:8px'>Sell "+(it.val||0)+"g</div><button type='button' id='popx'>Close</button>";
+  box.innerHTML="<h3>"+(it.q||"")+" "+it.n+"</h3><div>"+who+" · "+(SLOTN[it.slot]||it.slot)+(it.set?" · SET":" · UNIQUE")+"</div><div style='margin-top:8px'>"+statLine(it.st)+"</div>"+(it.affix?("<div style='margin-top:8px;color:#ff9ae0'>"+it.affix+"</div>"):"")+"<div class='sys' style='margin-top:8px'>Sell "+(it.val||0)+"g</div><button type='button' id='popx'>Close</button>";
   document.getElementById("pop").className="on";
   document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
 }
@@ -178,6 +178,30 @@ function setId(zi,cls,setn){return "z"+zi+"_"+cls+"_"+setn;}
 function setName(zi,cls,setn){return SET_PREFIX[setn][zi]+" "+CLASSES[cls].name;}
 function setBonus(cls){
   return ({vanguard:"+12% DEF",warrior:"+12% ATK",ranger:"Mark +15%",rogue:"+8% LUK crit",monk:"Flurry +1",paladin:"Aegis mends 6%",cleric:"Mend +20%",darkmage:"Bolt +15%",bard:"Hymn +ATK",alchemist:"Vial burn"})[cls];
+}
+const ZONE_UNIQUES=[
+  [{n:"Oathbreaker",slot:"weapon",affix:"On hit +2 true",st:{atk:3},sk:null},{n:"Key-Ring Helm",slot:"head",affix:"+1 party DEF",st:{def:3},sk:null},{n:"Levy Heart",slot:"acc",affix:"Start fight +4 HP",st:{hp:4},sk:null},{n:"Portcullis Plate",slot:"body",affix:"First hit -30%",st:{def:4},sk:null}],
+  [{n:"Antler Bow",slot:"weapon",affix:"Mark lasts +1",st:{atk:2,spd:2},sk:"mark"},{n:"Sap Circlet",slot:"head",affix:"Regen 2 HP/wave",st:{spr:2},sk:null},{n:"Red Hart Charm",slot:"acc",affix:"+8% crit",st:{luk:4},sk:null},{n:"Thorn Mail",slot:"body",affix:"Return 2 dmg",st:{def:3},sk:null}],
+  [{n:"Fen Bell",slot:"acc",affix:"Ward +1 stack",st:{spr:3},sk:"ward"},{n:"Mire Brand",slot:"weapon",affix:"Poison 2/turn",st:{atk:3},sk:null},{n:"Fever Veil",slot:"head",affix:"Resist first ailment",st:{spr:2,int:2},sk:null},{n:"Bog Plate",slot:"body",affix:"+HP after mend",st:{hp:5},sk:null}],
+  [{n:"Tide Fang",slot:"weapon",affix:"Bonus vs marked",st:{atk:4},sk:null},{n:"Salt Locket",slot:"acc",affix:"MP +1 on defend",st:{spr:2},sk:null},{n:"Crypt Mail",slot:"body",affix:"Death cling +10%",st:{def:3,hp:3},sk:null},{n:"Brine Gauntlets",slot:"hands",affix:"Cleave +1 target",st:{atk:2},sk:"cleave"}],
+  [{n:"Kiln Edge",slot:"weapon",affix:"Burn 3",st:{atk:4},sk:null},{n:"Cinder Halo",slot:"head",affix:"Smite +INT",st:{spr:3},sk:"smite"},{n:"Ash Signet",slot:"acc",affix:"+gold 20%",st:{luk:3},sk:null},{n:"Forge Hands",slot:"hands",affix:"Power Blow cheaper",st:{atk:2},sk:"power"}],
+  [{n:"Choir Note",slot:"acc",affix:"Hymn also heals 4",st:{spr:4},sk:"hymn"},{n:"Glass Needle",slot:"weapon",affix:"Ignore 3 DEF",st:{atk:3,int:2},sk:null},{n:"Mirror Mask",slot:"head",affix:"Copy last foe hit",st:{int:3},sk:null},{n:"Obsidian Rib",slot:"body",affix:"Reflect 10%",st:{def:4},sk:null}],
+  [{n:"Dust Standard",slot:"acc",affix:"+ATK when ally down",st:{atk:3,luk:2},sk:null},{n:"Bone Saber",slot:"weapon",affix:"Execute <12%",st:{atk:5},sk:null},{n:"Warlord Helm",slot:"head",affix:"Taunt cheaper",st:{def:3},sk:"taunt"},{n:"Ash Wraps",slot:"hands",affix:"Flurry +hit",st:{spd:3},sk:"flurry"}],
+  [{n:"Storm Jurist",slot:"weapon",affix:"Chain 1 bolt",st:{atk:3,int:3},sk:"bolt"},{n:"Cloud Seal",slot:"acc",affix:"+2 SPD first wave",st:{spd:4},sk:null},{n:"Gale Mail",slot:"body",affix:"Dodge 8%",st:{def:2,spd:3},sk:null},{n:"Thunder Rings",slot:"hands",affix:"Crit shock",st:{luk:3},sk:null}],
+  [{n:"Nameless Blade",slot:"weapon",affix:"Steal 1 Codex rank 5%",st:{atk:4,int:2},sk:null},{n:"Thin Crown",slot:"head",affix:"Skills -1 MP",st:{int:3,spr:2},sk:null},{n:"Rift Charm",slot:"acc",affix:"Red Gate luck +",st:{luk:5},sk:null},{n:"Echo Shroud",slot:"body",affix:"After Devour +MP",st:{spr:3},sk:null}],
+  [{n:"First Tooth",slot:"weapon",affix:"Devour threshold 25%",st:{atk:5},sk:null},{n:"Heart-Eater",slot:"acc",affix:"Boss steal +15%",st:{int:4,spr:2},sk:null},{n:"Spire Voice",slot:"head",affix:"All skills +rank flavor",st:{int:3,spr:3},sk:null},{n:"Last Vow",slot:"body",affix:"Once per area: survive 1",st:{hp:8,def:3},sk:null}]
+];
+function makeUnique(zi,q){
+  const tpl=pick(ZONE_UNIQUES[zi]||ZONE_UNIQUES[0]);
+  const it=makePiece(zi,"any",null,tpl.slot,q,{unique:true,from:tpl.n});
+  it.n=q+" "+tpl.n;
+  it.affix=tpl.affix;
+  it.sk=tpl.sk;
+  it.set=null;
+  it.setn=null;
+  Object.entries(tpl.st||{}).forEach(([k,v])=>{it.st[k]=(it.st[k]||0)+v;});
+  it.val=Math.round(it.val*1.4);
+  return it;
 }
 function makePiece(zi,cls,setn,slot,q,opts){
   opts=opts||{}; q=q||"Uncommon";
@@ -273,6 +297,10 @@ function say(h,c){
     const go=ev=>{ev.preventDefault();ev.stopPropagation();openItem(el.getAttribute("data-iid"));};
     el.onclick=go; el.ontouchend=go;
   });
+  p.querySelectorAll(".traitlink").forEach(el=>{
+    const go=ev=>{ev.preventDefault();ev.stopPropagation();openTrait(el.getAttribute("data-tn"), el.getAttribute("data-tr"));};
+    el.onclick=go; el.ontouchend=go;
+  });
 }
 function choices(opts){
   ch.innerHTML="";
@@ -329,8 +357,10 @@ function living(){return party().filter(u=>!u.dead&&u.hp>0);}
 function mainU(){return G.roster.find(r=>r.main);}
 function gearBonus(u){
   const add={hp:0,atk:0,def:0,spd:0,int:0,spr:0,luk:0}; const sets={};
-  SLOTS.forEach(sl=>{const it=u.gear&&u.gear[sl]; if(!it)return; Object.entries(it.st||{}).forEach(([k,v])=>add[k]=(add[k]||0)+v); sets[it.set]=(sets[it.set]||0)+1;});
-  u._setOn=null; Object.entries(sets).forEach(([sid,n])=>{if(n>=4)u._setOn=sid;}); return add;
+  SLOTS.forEach(sl=>{const it=u.gear&&u.gear[sl]; if(!it)return; Object.entries(it.st||{}).forEach(([k,v])=>add[k]=(add[k]||0)+v); if(it.set) sets[it.set]=(sets[it.set]||0)+1;});
+  u._setOn=null; Object.entries(sets).forEach(([sid,n])=>{if(n>=4)u._setOn=sid;});
+  u._affix=(SLOTS.map(sl=>u.gear&&u.gear[sl]&&u.gear[sl].affix).filter(Boolean));
+  return add;
 }
 function stat(u,k){const b=gearBonus(u); return k==="hpMax"?u.hpMax+(b.hp||0):(u[k]||0)+(b[k]||0);}
 function hud(){
@@ -504,12 +534,37 @@ function doDevour(u,e){
   else {say("<span class='rare'>Devour.</span>"); e.hp=0; steal();}
   after();
 }
+function traitInfo(n){
+  if(n==="Iron Pulse") return {title:n, body:"Stolen vitality. Each rank +4 Max HP (applied when gained / on rebirth)."};
+  if(n==="Quick Vein") return {title:n, body:"Stolen speed. Each rank +1 SPD."};
+  if(n==="Shadow Edge") return {title:n, body:"You learn Power Blow. A heavy strike (extra ATK scaling). Ranks deepen the Codex only."};
+  if(n==="Blood Tick") return {title:n, body:"You learn Drain. Deal INT damage and heal for half. Ranks deepen the Codex only."};
+  if(/Appetite$/.test(n)) return {title:n, body:"A zone's hunger branded into you. Flavor trait. Higher rank = a thicker mark. No extra combat math yet."};
+  return {title:n, body:"A Devoured remnant. Kept in the Codex through death."};
+}
+function traitLink(n,r){
+  return "<button type='button' class='itemlink traitlink' data-tn=\""+n.replace(/"/g,"")+"\" data-tr=\""+(r||1)+"\"><b><u>"+n+(r?(" R"+r):"")+"</u></b></button>";
+}
+function openTrait(n,r){
+  const info=traitInfo(n);
+  const box=document.getElementById("popbox");
+  box.innerHTML="<h3>"+info.title+"</h3><div>Rank "+(r||1)+" / 3</div><div style='margin-top:8px'>"+info.body+"</div><button type='button' id='popx'>Close</button>";
+  document.getElementById("pop").className="on";
+  document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
+}
 function steal(){
   const m=mainU(), pool=[{n:"Iron Pulse"},{n:"Quick Vein"},{n:"Shadow Edge",sid:"power"},{n:"Blood Tick",sid:"drain"},{n:ZONES[G.zone].rank+" Appetite"}];
   const item=pick(pool), have=m.codex.find(c=>c.n===item.n);
-  if(have){if(have.r<3){have.r++;say("Codex "+have.n+" R"+have.r,"rare");} else say("Capped.");}
-  else {m.codex.push({n:item.n,r:1,sid:item.sid}); if(item.sid&&!m.skills.includes(item.sid))m.skills.push(item.sid);
-    if(item.n==="Quick Vein")m.spd++; if(item.n==="Iron Pulse"){m.hpMax+=4;m.hp+=4;} say("<span class='rare'>Codex: "+item.n+"</span>");}
+  if(have){
+    if(have.r<3){have.r++; say("Codex "+traitLink(have.n,have.r)+" ranked up. Tap the name.","rare");}
+    else say("Capped: "+traitLink(have.n,have.r));
+  } else {
+    m.codex.push({n:item.n,r:1,sid:item.sid});
+    if(item.sid&&!m.skills.includes(item.sid))m.skills.push(item.sid);
+    if(item.n==="Quick Vein")m.spd++;
+    if(item.n==="Iron Pulse"){m.hpMax+=4;m.hp+=4;}
+    say("<span class='rare'>Devoured</span> "+traitLink(item.n,1)+" — tap the name.");
+  }
 }
 function enemy(e){
   const ts=living(); if(!ts.length)return wipe();
@@ -541,17 +596,13 @@ function dropLoot(){
   const uniqFoe=G.combat&&G.combat.enemies.some(e=>e.unique);
   if(G.red&&G.combat&&G.combat.boss){
     const q=Math.random()<0.35?"Legendary":"Epic";
-    if(Math.random()<0.45) return makePiece(zi,"any",null,"weapon",q,{red:true,unique:true,from:G.areaName});
-    const slot=pick(["head","body","hands","acc"]);
-    return makePiece(zi,cls,null,slot,q,{red:true,unique:true,from:G.areaName});
+    const it=makeUnique(zi,q); it.red=true; it.val=Math.round(it.val*1.6); return it;
   }
-  if(uniqFoe && Math.random()<0.10){
-    return makePiece(zi,cls,null,pick(SLOTS),Math.random()<0.25?"Legendary":"Epic",{unique:true,from:(G.combat.enemies.find(e=>e.unique)||{}).name});
-  }
+  if(uniqFoe && Math.random()<0.10) return makeUnique(zi, Math.random()<0.25?"Legendary":"Epic");
   const q=rollQuality();
+  if(q==="Epic"||q==="Legendary") return makeUnique(zi,q);
   const setn=q==="Rare"?1:0;
-  if(q==="Uncommon"||q==="Rare") return makePiece(zi,cls,setn,pick(SLOTS),q);
-  return makePiece(zi,cls,null,pick(SLOTS),q,{unique:q==="Legendary"});
+  return makePiece(zi,cls,setn,pick(SLOTS),q);
 }
 function winFight(){
   G.roster.slice().forEach(u=>{
@@ -671,8 +722,9 @@ function inspectItem(it,u,bag,back){
   const worn=u.gear&&u.gear[it.slot];
   say(itemLink(it));
   say((CLASSES[it.cls]?CLASSES[it.cls].name:it.cls||"any")+" · "+SLOTN[it.slot]+(it.val?" · sell "+it.val+"g":""));
+  say((it.set?"Set piece.":"Off-set unique — intended as your 5th slot.")+(it.affix?(" Affix: "+it.affix):""));
   say("This piece: "+statLine(it.st));
-  if(worn){ say("Worn now: <b>"+worn.q+" "+worn.n+"</b> — "+statLine(worn.st)); say("If you swap: "+deltaLine(it.st,worn.st)); }
+  if(worn){ say("Worn now: <b>"+worn.q+" "+worn.n+"</b> — "+statLine(worn.st)+(worn.affix?(" · "+worn.affix):"")); say("If you swap: "+deltaLine(it.st,worn.st)); }
   else say(u.name+" has nothing in "+SLOTN[it.slot]+".");
   choices([
     {list:true,label:"Equip on "+u.name,fn:()=>{
@@ -681,7 +733,9 @@ function inspectItem(it,u,bag,back){
       if(worn) arr.push(worn);
       u.gear[it.slot]=it;
       if(idx>=0) arr.splice(idx,1);
+      if(it.sk && !u.skills.includes(it.sk)){u.skills.push(it.sk); say(u.name+" learns "+it.sk+" from the unique.");}
       gearBonus(u); hud();
+      if(u._setOn) say("<span class='rare'>SET 4/5</span> — "+setBonus(u.cls||it.cls||"warrior"));
       say("Equipped "+itemLink(it)+" on "+u.name+".");
       back();
     }},
@@ -786,7 +840,13 @@ function equipOnto(u){
 }
 function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hud(); hub();}},{label:"Back",fn:hub}]);}
 function shop(){choices([{label:"Potion 8g",fn:()=>{if(G.gold<8){say("No.");return shop();}G.gold-=8;G.pots++;hud();shop();}},{label:"Back",fn:hub}]);}
-function codex(){const c=mainU().codex; say(c.length?c.map(x=>x.n+" R"+x.r).join(" · "):"Empty Codex."); choices([{label:"Back",fn:hub}]);}
+function codex(){
+  const c=mainU().codex;
+  if(!c.length){say("Empty Codex.");return choices([{label:"Back",fn:hub}]);}
+  say("Codex — tap a name.");
+  c.forEach(x=>say(traitLink(x.n,x.r)+" · "+traitInfo(x.n).body));
+  choices(c.map(x=>({list:true,label:x.n+" R"+x.r,fn:()=>openTrait(x.n,x.r)})).concat([{label:"Back",fn:hub}]));
+}
 boot();
 </script>
 </body>
