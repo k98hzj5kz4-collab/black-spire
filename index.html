@@ -75,7 +75,8 @@ input[type=text]{grid-column:1/-1;width:100%;padding:12px;border-radius:10px;bor
 .zonegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .ztile{background:linear-gradient(#2a2030,#16101c);border:1px solid #6a5a40;border-radius:12px;padding:10px 4px;text-align:center;font-size:10px;box-shadow:0 4px 8px #0005}
 .ztile b{display:block;color:var(--gold);font-family:Cinzel,serif;font-size:15px}
-.itemlink{color:#ffe08a;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;font:inherit;display:inline}
+.itemlink{text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;font:inherit;display:inline}
+.q-Uncommon{color:#6fbf7a}.q-Rare{color:#5eb0ff}.q-Epic{color:#c48aff}.q-Legendary{color:#f0c45a}
 #pop{display:none;position:fixed;inset:0;background:#000a;z-index:40;align-items:center;justify-content:center;padding:18px}
 #pop.on{display:flex}
 #pop .box{background:#16101c;border:1px solid #f0c45a;border-radius:16px;padding:16px;max-width:360px;width:100%;color:#f6efe3;font-size:14px;line-height:1.45}
@@ -141,7 +142,7 @@ const ITEMS={};
 function remember(it){if(it&&it.id) ITEMS[it.id]=it; return it;}
 function itemLink(it){
   remember(it);
-  return "<button type='button' class='itemlink' data-iid='"+it.id+"'><b><u>"+(it.q?it.q+" ":"")+it.n+"</u></b></button>";
+  return "<button type='button' class='itemlink q-"+(it.q||"Uncommon")+"' data-iid='"+it.id+"'><b><u>"+(it.q?it.q+" ":"")+it.n+"</u></b></button>";
 }
 function openItem(id){
   const it=ITEMS[id]||(G.expedition||[]).concat(G.stash||[]).find(x=>x.id===id);
@@ -215,6 +216,7 @@ CLASSES.demonlord={name:"Demon Lord",w:{hp:3,atk:3,int:2},skills:["dread","doom"
 CLASSES.warlock={name:"Warlock",w:{int:3,spr:2,luk:1},skills:["curse","pact"]};
 CLASSES.jester={name:"Jester",w:{luk:4,spd:2,int:1},skills:["loaded","jackpot"]};
 const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"],demonlord:["Vhorr","Ashketh"],warlock:["Mael","Yssra"],jester:["Puck","Nimble"]};
+const NAME_POOL=["Alden","Bram","Cedric","Dorian","Edric","Flint","Gareth","Harlan","Ivor","Joss","Kaelith","Loric","Magnus","Niels","Orin","Pavel","Quill","Rook","Soren","Tristan","Ulric","Viktor","Wynn","Yorick","Zane","Asha","Briar","Cora","Dessa","Elowen","Faye","Gwen","Hester","Iris","Juniper","Kira","Lena","Mirael","Neris","Opal","Priya","Quinn","Rhea","Sablee","Tamsin","Una","Vera","Willa","Yara","Zosia"];
 const SLOTS=["weapon","head","body","hands","acc"];
 const SLOTN={weapon:"Weapon",head:"Head",body:"Body",hands:"Hands",acc:"Charm"};
 const SET_PREFIX=[["Oath","Fang","Fever","Brine","Cinder","Glass","Dust","Storm","Veil","Heart"],["Bastion","Thorn","Mire","Tide","Forge","Mirror","Bone","Sky","Rift","Crown"]];
@@ -422,7 +424,7 @@ function makeHire(cls,lv){
   if(lv>=5 && Math.random()<0.35){const bonus=pick(["power","mend","ward","veil"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
   if(lv>=10 && Math.random()<0.25){const bonus=pick(["cleave","smite","bolt"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
   for(let i=1;i<lv;i++){s.hpMax+=3;s.hp+=3;s.atk++; if(i%3===0)s.def++; if(i%4===0)s.spd++; if(i%5===0){s.int++;s.spr++;}}
-  const h=Object.assign({id:uid(),name:pick(NAMES[cls]),cls,main:false,lv,xp:0,unspent:0,row:"front",skills,gear:{},dead:false,gauge:0,price:0},s);
+  const h=Object.assign({id:uid(),name:pick((NAMES[cls]||[]).concat(NAME_POOL)),cls,main:false,lv,xp:0,unspent:0,row:"front",skills,gear:{},dead:false,gauge:0,price:0},s);
   h.price=hirePrice(cls,lv,extra);
   h.extra=extra;
   return h;
