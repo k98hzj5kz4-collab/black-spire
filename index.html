@@ -655,7 +655,68 @@ function winFight(){
     else if(!wasBoss && G.wave>=G.waves) startFight(pack(G.zone,true),true);
     else areaClear();
   };
-  camp();
+  if(!wasBoss && Math.random()<0.2) restCamp();
+  else if(wasBoss) camp();
+  else {
+    say("No gap to rest. Onward.");
+    choices([
+      {label:"Review loot",fn:()=>reviewLootTo(midWave)},
+      {label:"Next fight",fn:()=>G._afterCamp()}
+    ]);
+  }
+}
+function midWave(){
+  choices([
+    {label:"Review loot",fn:()=>reviewLootTo(midWave)},
+    {label:"Next fight",fn:()=>G._afterCamp()}
+  ]);
+}
+function reviewLootTo(back){
+  const bag=G.expedition||[];
+  if(!bag.length){say("Bag empty.");return back();}
+  say("Bag "+bag.length+". Tap a row to compare.");
+  choices(bag.map(it=>({list:true,label:it.q+" "+it.n,fn:()=>{
+    openItem(it.id);
+    choices(party().filter(u=>u.main||it.cls==="any"||it.cls===u.cls).map(u=>({list:true,label:"Compare "+u.name,fn:()=>inspectItem(it,u,"bag",()=>reviewLootTo(back))})).concat([{label:"Back",fn:()=>reviewLootTo(back)}]));
+  }})).concat([{label:"Back",fn:back}]));
+}
+function restCamp(){
+  setScene("camp"); hud();
+  say("<span class='rare'>A break in the dark.</span> 1/5 rest. Spend potions or MP heals, then the next fight.");
+  restCampChoices();
+}
+function restCampChoices(){
+  choices([
+    {label:"Use potion",fn:restPotion},
+    {label:"Heal skill",fn:restSkillPick},
+    {label:"Review loot",fn:()=>reviewLootTo(restCampChoices)},
+    {label:"Move on",fn:()=>G._afterCamp()}
+  ]);
+}
+function restPotion(){
+  if(!G.pots){say("No potions.");return restCampChoices();}
+  const hurt=party().filter(u=>!u.dead&&u.hp<stat(u,"hpMax"));
+  if(!hurt.length){say("No one is hurt.");return restCampChoices();}
+  choices(hurt.map(u=>({list:true,label:u.name+" "+u.hp+"/"+stat(u,"hpMax"),fn:()=>{
+    G.pots--; u.hp=clamp(u.hp+18,0,stat(u,"hpMax")); hud();
+    say(u.name+" drinks. HP "+u.hp+"/"+stat(u,"hpMax")+" · pots "+G.pots);
+    restCampChoices();
+  }})).concat([{label:"Back",fn:restCampChoices}]));
+}
+function restSkillPick(){
+  const casters=living().filter(u=>u.skills.includes("mend")&&u.mp>=(SKILLS.mend.mp));
+  if(!casters.length){say("No one can Mend (need skill + MP).");return restCampChoices();}
+  choices(casters.map(u=>({list:true,label:u.name+" Mend MP "+u.mp,fn:()=>restSkillTgt(u)})).concat([{label:"Back",fn:restCampChoices}]));
+}
+function restSkillTgt(u){
+  const ts=party().filter(t=>!t.dead);
+  choices(ts.map(t=>({list:true,label:"Mend "+t.name+" "+t.hp+"/"+stat(t,"hpMax"),fn:()=>{
+    u.mp-=SKILLS.mend.mp;
+    const h=Math.floor((8+stat(u,"spr"))*(u._setOn&&u.cls==="cleric"?1.2:1));
+    t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); hud();
+    say(u.name+" mends "+t.name+" +"+h+" · MP "+u.mp);
+    restCampChoices();
+  }})).concat([{label:"Back",fn:restSkillPick}]));
 }
 function areaClear(){
   G.inArea=false; const z=ZONES[G.zone]; if(G.zone>G.best){G.best=G.zone;G.bestRank=z.rank;}
