@@ -275,7 +275,7 @@ function icKind(label){
   if(L.includes("church")) return "church";
   if(L.includes("shop")||L.includes("potion 8")) return "cart";
   if(L.includes("codex")) return "book";
-  if(L.includes("save")) return "save";
+  if(L.includes("save")||L.includes("title")||L.includes("continue")||L.includes("new game")||L.includes("delete")) return "home";
   if(L.includes("attack")) return "sword";
   if(L.includes("skill")) return "spark";
   if(L.includes("defend")) return "shield";
@@ -375,6 +375,7 @@ function hud(){
 function titleMenu(){
   G=null;
   setScene("hub");
+  if(logEl) logEl.innerHTML="";
   if(stage) stage.innerHTML="";
   document.getElementById("top").textContent="Title";
   document.getElementById("hpl").textContent="BLACK SPIRE";
@@ -425,8 +426,7 @@ function hub(){
   choices([
     {label:"World",icon:"🗺️",fn:world},{label:"Inn",icon:"🛏️",fn:inn},{label:"Party",icon:"👥",fn:barracks},
     {label:"Gear",icon:"🎒",fn:gearMenu},{label:"Stats",icon:"📊",fn:statsMenu},{label:"Church",icon:"⛪",fn:church},
-    {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Save",icon:"💾",fn:()=>{save();say("Bound.");hub();}},
-    {label:"Title",fn:()=>{save();titleMenu();}}
+    {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Title",fn:()=>{save();titleMenu();}}
   ]);
 }
 function world(){
