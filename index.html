@@ -20,17 +20,17 @@ body[data-scene="world"] #stage{background:radial-gradient(ellipse at 50% 10%,#2
 body[data-scene="combat"] #stage{background:radial-gradient(ellipse at 50% 0%,#6a2048 0%,transparent 50%),linear-gradient(#2a1020,#100810 65%,#3a1810)}
 body[data-scene="camp"] #stage{background:radial-gradient(ellipse at 50% 80%,#c45a20 0%,transparent 45%),linear-gradient(#1a1020,#0c0a10)}
 body[data-scene="combat"] #stage,body[data-scene="camp"] #stage{max-height:24dvh;overflow:hidden;padding-top:4px;flex:0 0 auto}
-body[data-scene="combat"] .card,body[data-scene="camp"] .card{width:52px !important;padding:3px 2px !important;border-radius:12px}
-body[data-scene="combat"] .face,body[data-scene="camp"] .face{width:26px !important;height:26px !important;margin-bottom:1px}
-body[data-scene="combat"] .face svg,body[data-scene="camp"] .face svg{width:13px !important;height:13px !important}
+body[data-scene="combat"] .card,body[data-scene="camp"] .card{width:56px !important;padding:3px 2px 5px !important;border-radius:10px}
+body[data-scene="combat"] .face,body[data-scene="camp"] .face{width:48px !important;height:56px !important;margin-bottom:2px;border-radius:7px}
+body[data-scene="combat"] .face svg,body[data-scene="camp"] .face svg{width:48px !important;height:56px !important}
 body[data-scene="combat"] .role,body[data-scene="camp"] .role{display:none !important}
 body[data-scene="combat"] .name,body[data-scene="camp"] .name{font-size:9px}
 body[data-scene="combat"] .nums,body[data-scene="camp"] .nums{font-size:8px}
 body[data-scene="combat"] .rowcards,body[data-scene="camp"] .rowcards{gap:4px;margin-bottom:2px}
 body[data-scene="combat"] #log,body[data-scene="camp"] #log{height:132px}
 #log,#choices{position:relative;z-index:10}
-header{padding:12px 16px 10px;border-bottom:1px solid #4a3a22;background:linear-gradient(#1c1428,#120e1c);box-shadow:0 8px 24px #0008}
-h1{margin:0;font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f0c45a55}
+header{padding:10px 16px 8px;border-bottom:1px solid #c4a05a44;background:linear-gradient(180deg,#24182e,#120e18);box-shadow:0 10px 28px #000a}
+h1{margin:0;font-family:Cinzel,serif;font-size:14px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 22px #f0c45a66}
 .meta{font-size:12px;color:#d7c7a0}
 #stage{padding:8px 10px 4px;min-height:0;flex:1 1 auto;overflow:auto;background:
 radial-gradient(ellipse at 50% 0%,#4a1a55 0%,transparent 55%),
@@ -38,16 +38,16 @@ linear-gradient(#1b1230, #0e0a16 70%, #3a2a18);
 position:relative}
 #stage:after{content:"";position:absolute;left:8%;right:8%;bottom:10px;height:18px;background:radial-gradient(ellipse at center,#0007,transparent 70%);pointer-events:none}
 .rowcards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;position:relative;z-index:1}
-.card{width:88px;background:linear-gradient(#2a2038,#16101f);border:1px solid #6a5a40;border-radius:16px;padding:8px 5px 8px;text-align:center;box-shadow:0 8px 16px #0007}
+.card{width:92px;background:linear-gradient(180deg,#2e243c 0%,#14101c 100%);border:1px solid #7a6844;border-radius:14px;padding:6px 4px 8px;text-align:center;box-shadow:0 10px 22px #0008,inset 0 1px 0 #fff1}
 #stage[data-n="4"] .card,#stage[data-n="5"] .card,#stage[data-n="6"] .card,#stage[data-n="7"] .card,#stage[data-n="8"] .card{width:68px;padding:5px 3px}
-#stage[data-n="4"] .face,#stage[data-n="5"] .face,#stage[data-n="6"] .face,#stage[data-n="7"] .face,#stage[data-n="8"] .face{width:40px;height:40px}
-#stage[data-n="4"] .face svg,#stage[data-n="5"] .face svg,#stage[data-n="6"] .face svg,#stage[data-n="7"] .face svg,#stage[data-n="8"] .face svg{width:20px;height:20px}
+#stage[data-n="4"] .face,#stage[data-n="5"] .face,#stage[data-n="6"] .face,#stage[data-n="7"] .face,#stage[data-n="8"] .face{width:48px;height:56px}
+#stage[data-n="4"] .face svg,#stage[data-n="5"] .face svg,#stage[data-n="6"] .face svg,#stage[data-n="7"] .face svg,#stage[data-n="8"] .face svg{width:48px;height:56px}
 #stage[data-n="4"] .role,#stage[data-n="5"] .role,#stage[data-n="6"] .role,#stage[data-n="7"] .role,#stage[data-n="8"] .role{display:none}
 .card.foe{border-color:#8a3040;background:linear-gradient(#3a1520,#1a0c10)}
 .card.boss{border-color:var(--gold);box-shadow:0 0 0 1px #f0c45a,0 0 16px #f0c45a55}
 .card.dead{opacity:.38;filter:grayscale(.8)}
-.face{width:64px;height:64px;margin:0 auto 6px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#fff4,#0000 40%),var(--c,#3a2a55);border:2px solid #f0c45a99;box-shadow:inset 0 -10px 14px #0006,0 0 16px color-mix(in srgb, var(--c) 40%, transparent)}
-.face svg{width:34px;height:34px}
+.face{width:70px;height:82px;margin:0 auto 5px;border-radius:10px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 20%,#fff3,#0000 55%),var(--c,#2a1a38);border:1px solid #f0c45acc;box-shadow:inset 0 -16px 18px #0005,0 0 14px color-mix(in srgb, var(--c) 35%, transparent)}
+.face svg{width:70px;height:82px;display:block}
 .name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .role{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#cbb896;margin-top:2px}
 .nums{font-size:10px;color:#e8dcc4;margin-top:3px}
@@ -64,7 +64,7 @@ body[data-scene="hub"] #log,body[data-scene="world"] #log{height:100px}
 .sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#ff7a8a}.good{color:#8ee09a}.rare{color:#ff9ae0}.skill{color:#cbb6ff}
 #choices{padding:8px 10px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#100c18;flex:0 0 auto;z-index:8}
 #choices.list{grid-template-columns:1fr}
-button.opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:6px 4px;border-radius:16px;border:1px solid #5a4a32;background:linear-gradient(#2a2238,#17121f);color:var(--ink);font:inherit;font-size:11px;font-weight:600;text-align:center;box-shadow:0 4px 0 #0006}
+button.opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px;padding:6px 4px;border-radius:12px;border:1px solid #8a7344;background:linear-gradient(180deg,#2c2438,#16121e);color:var(--ink);font:inherit;font-size:11px;font-weight:600;text-align:center;box-shadow:0 6px 14px #0006,inset 0 1px 0 #fff2}
 button.opt .ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#fff4,#0000 45%),#3a2a18;border:1px solid #f0c45a66}
 button.opt .ic svg{width:20px;height:20px}
 button.opt:active{transform:translateY(2px);box-shadow:none}
@@ -367,6 +367,40 @@ function svg(kind,c){
   return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">${paths[kind]||paths.star}</svg>`;
 }
 const FACEKIND={devourer:"void",vanguard:"shield",warrior:"sword",ranger:"bow",rogue:"dagger",monk:"fist",paladin:"cross",cleric:"star",darkmage:"orb",bard:"note",alchemist:"vial",demonlord:"skull",warlock:"orb",jester:"note",foe:"skull",boss:"skull"};
+function portrait(cls){
+  const skin="#e2b896",line="#2a1a14",hair={
+    devourer:"#1a1028",vanguard:"#3a2a20",warrior:"#4a2010",ranger:"#2a3a18",rogue:"#1c1c22",monk:"#3a2210",
+    paladin:"#f0e0b0",cleric:"#d8c8a0",darkmage:"#2a1038",bard:"#6a2040",alchemist:"#3a4a38",
+    demonlord:"#1a0808",warlock:"#241028",jester:"#c04030",foe:"#5a3040",boss:"#3a1020"
+  }[cls]||"#2a1a18";
+  const acc=CLSCOL[cls]||"#886";
+  const helm={
+    devourer:`<path d="M10 22c0-8 6-14 14-14s14 6 14 14" fill="#1a1028"/><circle cx="24" cy="20" r="5" fill="#5a20a0"/><circle cx="24" cy="20" r="2" fill="#e8c0ff"/>`,
+    vanguard:`<path d="M8 20 l16-10 16 10 v8 H8z" fill="#6a8098"/><path d="M18 28h12v6H18z" fill="#c0d0e0"/>`,
+    warrior:`<path d="M12 16h24v6H12z" fill="#6a3030"/><path d="M22 8l2-4 2 4z" fill="#c04030"/>`,
+    ranger:`<path d="M10 18c8-10 20-10 28 0" fill="none" stroke="#3a5a28" stroke-width="3"/><path d="M8 22h32" stroke="#5a7a40" stroke-width="2"/>`,
+    rogue:`<path d="M8 18h32v8H8z" fill="#1c1c24"/><path d="M16 26h16v4H16z" fill="#2a2a32"/>`,
+    monk:`<path d="M14 16h20v4H14z" fill="#c08040"/><circle cx="24" cy="14" r="5" fill="#e8c090"/>`,
+    paladin:`<path d="M10 16l14-8 14 8v6H10z" fill="#d8c060"/><path d="M22 10v10M19 14h6" stroke="#fff8d0" stroke-width="1.5"/>`,
+    cleric:`<path d="M12 16c8-8 16-8 24 0" fill="#f0e8d0"/><path d="M24 8v10M20 12h8" stroke="#c0a040" stroke-width="2"/>`,
+    darkmage:`<path d="M8 22 L24 6 40 22z" fill="#3a1858"/><circle cx="24" cy="20" r="3" fill="#b080ff"/>`,
+    bard:`<path d="M10 20c0-8 28-8 28 0" fill="#a04070"/><circle cx="18" cy="18" r="2" fill="#f0c45a"/>`,
+    alchemist:`<path d="M14 14h20v8H14z" fill="#3a6058"/><rect x="20" y="8" width="8" height="8" rx="1" fill="#70d0c0"/>`,
+    demonlord:`<path d="M10 18 L16 6 20 18 M28 18 L32 6 38 18" fill="#8a1020"/><path d="M8 20h32v6H8z" fill="#3a1018"/>`,
+    warlock:`<path d="M8 20c10-14 22-14 32 0" fill="#3a1860"/><circle cx="24" cy="18" r="3" fill="#9060d0"/>`,
+    jester:`<path d="M8 20 L16 6 24 20 32 6 40 20" fill="#d0a020"/><circle cx="16" cy="8" r="2" fill="#c03030"/><circle cx="32" cy="8" r="2" fill="#3080c0"/>`,
+    foe:`<path d="M12 18h24v8H12z" fill="#5a2030"/>`,
+    boss:`<path d="M8 16l16-10 16 10v8H8z" fill="#c0a040"/><path d="M20 22h8v4h-8z" fill="#802020"/>`
+  }[cls]||"";
+  return `<svg viewBox="0 0 48 56" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="56" fill="none"/>
+  <ellipse cx="24" cy="50" rx="16" ry="10" fill="${acc}"/>
+  <ellipse cx="24" cy="28" rx="13" ry="15" fill="${skin}"/>
+  <ellipse cx="24" cy="16" rx="14" ry="10" fill="${hair}"/>
+  ${helm}
+  <circle cx="19" cy="28" r="1.6" fill="${line}"/><circle cx="29" cy="28" r="1.6" fill="${line}"/>
+  <path d="M20 35c3 2 6 2 8 0" fill="none" stroke="${line}" stroke-width="1.2" stroke-linecap="round"/>
+  </svg>`;
+}
 function icKind(label){
   const L=label.toLowerCase();
   if(L.includes("world")||L.includes("map")) return "map";
@@ -420,7 +454,7 @@ function unitCard(u,foe){
   const cls=foe?(u.boss?"boss":"foe"):(u.main?"devourer":(u.cls||"foe"));
   const hp=Math.max(0,u.hp), max=foe?u.hpMax:stat(u,"hpMax");
   return `<div class="card ${foe?"foe":""} ${u.boss?"boss":""} ${u.dead||hp<=0?"dead":""}">
-    <div class="face" style="--c:${CLSCOL[cls]||'#3a2a55'}">${svg(FACEKIND[cls]||"star","#fff8e8")}</div>
+    <div class="face" style="--c:${CLSCOL[cls]||'#3a2a55'}">${portrait(cls)}</div>
     <div class="name">${u.name}</div>
     <div class="role">${foe?(u.boss?"BOSS":"FOE"):(u.main?"DEVOURER":(CLASSES[u.cls]?CLASSES[u.cls].name:""))}</div>
     <div class="nums">${Math.max(0,hp|0)}/${max|0}</div>
