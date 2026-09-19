@@ -668,17 +668,25 @@ function hub(){
     {label:"Shop",icon:"🛒",fn:shop},{label:"Codex",icon:"📖",fn:codex},{label:"Title",fn:()=>{save();titleMenu();}}
   ]);
 }
+function zoneOpen(zi){ return zi===0 || zi<=(G.best||0)+1; }
 function world(){
   G.outing=true;
   if(!G.expedition) G.expedition=[];
   setScene("world");
-  say("Tap a rank. Bag is unlimited out here. Only 3 pieces come home.");
+  say("Clear a zone's area to open the next rank. Best: "+(G.bestRank||"G")+".");
   const zc=["#8a8680","#3d8a4a","#4a6a38","#4a6a8a","#c45a28","#3a2a4a","#c4a060","#6ab0e0","#c48ad0","#d02040"];
-  renderStage(`<div class="zonegrid">${ZONES.map((z,i)=>`<div class="ztile" style="border-color:${zc[i]}"><b style="color:${zc[i]}">${z.rank}</b>${z.name.split(" ")[0]}</div>`).join("")}</div>`);
-  const opts=ZONES.map(z=>({label:z.rank+" "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)}));
+  renderStage(`<div class="zonegrid">${ZONES.map((z,i)=>`<div class="ztile" style="border-color:${zoneOpen(i)?zc[i]:"#333"};opacity:${zoneOpen(i)?1:.35}"><b style="color:${zc[i]}">${z.rank}</b>${zoneOpen(i)?z.name.split(" ")[0]:"locked"}</div>`).join("")}</div>`);
+  const opts=ZONES.map(z=>{
+    if(!zoneOpen(z.id)){
+      const need=ZONES[z.id-1];
+      return {list:true,label:z.rank+" "+z.name+" — locked (clear "+need.rank+" first)",fn:()=>{say("Beat an area in "+need.rank+" "+need.name+" first."); world();}};
+    }
+    return {label:z.rank+" "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)};
+  });
   opts.push({label:"Return to Spirefoot",fn:goHub}); choices(opts);
 }
 function enterZone(zi){
+  if(!zoneOpen(zi)){ say("That rank is sealed."); return world(); }
   G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme); renderStage();
   const opts=z.areas.map((a,i)=>({list:true,label:z.rank+" area "+a+" — boss "+z.bossStd[i]+" (10% unique)",fn:()=>startArea(zi,i,false)}));
   if(Math.random()<0.12) opts.push({label:"Red Gate: "+z.red,icon:"🟥",fn:()=>startArea(zi,4,true)});
