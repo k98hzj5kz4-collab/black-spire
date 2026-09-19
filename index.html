@@ -26,6 +26,7 @@ body[data-scene="combat"] .face svg,body[data-scene="camp"] .face svg{width:48px
 body[data-scene="combat"] .role,body[data-scene="camp"] .role{display:none !important}
 body[data-scene="combat"] .name,body[data-scene="camp"] .name{font-size:9px}
 body[data-scene="combat"] .nums,body[data-scene="camp"] .nums{font-size:8px}
+body[data-scene="combat"] .stigs,body[data-scene="camp"] .stigs{font-size:7px;min-height:8px}
 body[data-scene="combat"] .rowcards,body[data-scene="camp"] .rowcards{gap:4px;margin-bottom:2px}
 body[data-scene="combat"] #log,body[data-scene="camp"] #log{height:132px}
 #log,#choices{position:relative;z-index:10}
@@ -51,6 +52,10 @@ position:relative}
 .name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .role{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#cbb896;margin-top:2px}
 .nums{font-size:10px;color:#e8dcc4;margin-top:3px}
+.stigs{font-size:8px;line-height:1.3;min-height:10px;margin-top:2px}
+.stig{display:inline-block;padding:0 3px;border-radius:3px;margin:0 1px;font-weight:700;letter-spacing:.04em}
+.st-bleed{background:#7a1818;color:#ffb0b0}.st-burn{background:#7a4010;color:#ffd090}.st-poison{background:#1a5a28;color:#b0ffc0}
+.st-stun{background:#3a2060;color:#e0c8ff}.st-mark{background:#5a2010;color:#ffc090}.st-weak{background:#304058;color:#c8d8ff}
 .mini{height:5px;background:#1c1826;border-radius:99px;margin-top:5px;overflow:hidden}.mini i{display:block;height:100%;background:linear-gradient(90deg,#ff8a9a,var(--hp))}
 .mini.mp i{background:linear-gradient(90deg,#9ad4ff,var(--mp))}
 #log{height:96px;overflow:auto;padding:6px 14px;font-size:13px;color:#e6d9c4;border-top:1px solid #4a3a22;background:#0b0910;flex:0 0 auto}
@@ -114,13 +119,28 @@ function ensurePots(){
   if(!G) return;
   if(!G.pots||typeof G.pots==="number"){
     const n=typeof G.pots==="number"?G.pots:0;
-    G.pots={hp:[n,0,0,0,0],mp:[0,0,0,0,0]};
+    G.pots={hp:[n,0,0,0,0],mp:[0,0,0,0,0],salve:0};
   }
   G.pots.hp=G.pots.hp||[0,0,0,0,0];
   G.pots.mp=G.pots.mp||[0,0,0,0,0];
+  if(G.pots.salve==null) G.pots.salve=0;
 }
 function potUnlocked(i){return (G.best||0)>=POT_TIERS[i].need;}
-function potCount(){ensurePots(); return G.pots.hp.reduce((a,b)=>a+b,0)+G.pots.mp.reduce((a,b)=>a+b,0);}
+function potCount(){ensurePots(); return G.pots.hp.reduce((a,b)=>a+b,0)+G.pots.mp.reduce((a,b)=>a+b,0)+(G.pots.salve||0);}
+function clearSt(u,all){
+  if(!u||!u.st) return false;
+  const keys=Object.keys(u.st);
+  if(!keys.length) return false;
+  if(all){u.st={}; return true;}
+  const order=["stun","bleed","burn","poison","weak","mark"];
+  const k=order.find(x=>u.st[x])||keys[0];
+  delete u.st[k]; return true;
+}
+function stPips(u){
+  if(!u||!u.st) return "";
+  const lab={bleed:"BLD",burn:"BRN",poison:"PSN",stun:"STN",mark:"MRK",weak:"WEAK"};
+  return Object.keys(u.st).map(k=>"<span class='stig st-"+k+"'>"+(lab[k]||k)+(u.st[k].t?u.st[k].t:"")+"</span>").join("");
+}
 function potionMenu(u){
   ensurePots();
   const opts=[];
@@ -128,9 +148,20 @@ function potionMenu(u){
     if(G.pots.hp[i]>0) opts.push({list:true,label:T.n+" HP +"+T.hp+" ×"+G.pots.hp[i],fn:()=>usePot("hp",i,u,true)});
     if(G.pots.mp[i]>0) opts.push({list:true,label:T.n+" MP +"+T.mp+" ×"+G.pots.mp[i],fn:()=>usePot("mp",i,u,true)});
   });
+  if(G.pots.salve>0) opts.push({list:true,label:"Salve ×"+G.pots.salve+" (cure all)",fn:()=>salvePick(true,u)});
   if(!opts.length){say("No potions.");return ally(u);}
   opts.push({label:"Back",fn:()=>ally(u)});
   choices(opts);
+}
+function salvePick(inFight,from){
+  ensurePots();
+  if(!G.pots.salve){say("No salves.");return inFight?ally(from||mainU()):restCampChoices();}
+  const sick=party().filter(x=>x.st&&Object.keys(x.st).length);
+  if(!sick.length){say("Nobody is afflicted.");return inFight?ally(from||mainU()):restCampChoices();}
+  choices(sick.map(x=>({list:true,label:x.name+" "+(stTag(x)||""),fn:()=>{
+    G.pots.salve--; clearSt(x,true); hud(); say(x.name+" is cleansed.");
+    if(inFight) after(); else restCampChoices();
+  }})).concat([{label:"Back",fn:()=>inFight?potionMenu(from||mainU()):restPotion()}]));
 }
 function usePot(kind,i,u,inFight){
   ensurePots();
@@ -330,6 +361,38 @@ function skillInfo(sid){
   const S=SKILLS[sid]||{n:sid,mp:"?",g:""};
   return {title:S.n, body:(SKILL_HELP[sid]||"A learned art.")+" · "+S.mp+" MP · "+(S.g||"")};
 }
+function ensureRanks(u){
+  if(!u||!u.skills) return;
+  u.skillRanks=u.skillRanks||{};
+  u.skills.forEach(s=>{ if(u.skillRanks[s]==null) u.skillRanks[s]=1; });
+}
+function skR(u,sid){ ensureRanks(u); return clamp(u.skillRanks[sid]||1,1,3); }
+function mpCost(u,sid){ const b=(SKILLS[sid]&&SKILLS[sid].mp)||0; return Math.max(0,b-(skR(u,sid)>=3?1:0)); }
+function putSt(t,k,n,turns){
+  if(!t) return;
+  t.st=t.st||{};
+  const cur=t.st[k];
+  t.st[k]={n:Math.max(n,cur&&cur.n||0), t:Math.max(turns,cur&&cur.t||0)};
+}
+function tickSt(u){
+  if(!u||!u.st) return false;
+  let skip=false;
+  Object.keys(u.st).forEach(k=>{
+    const s=u.st[k]; if(!s||s.t<=0){delete u.st[k];return;}
+    if(k==="stun"){ skip=true; say(u.name+" is stunned.","hurt"); }
+    else if(k==="bleed"){ u.hp=Math.max(0,u.hp-s.n); say(u.name+" bleeds "+s.n+".","hurt"); }
+    else if(k==="burn"){ u.hp=Math.max(0,u.hp-s.n); say(u.name+" burns "+s.n+".","hurt"); }
+    else if(k==="poison"){ u.hp=Math.max(0,u.hp-s.n); say(u.name+" is poisoned "+s.n+".","hurt"); }
+    s.t--; if(s.t<=0) delete u.st[k];
+  });
+  if(u.hp<=0){u.hp=0; if(u.main||(G.party&&G.party.includes(u.id))) down(u); else say(u.name+" drops.");}
+  return skip;
+}
+function stTag(u){
+  if(!u||!u.st) return "";
+  const n=Object.keys(u.st);
+  return n.length?" ["+n.join(",")+"]":"";
+}
 const CLSCOL={devourer:"#7b3cff",vanguard:"#4aa0ff",warrior:"#e06040",ranger:"#4cbf6a",rogue:"#8a90a8",monk:"#e09040",paladin:"#f0c45a",cleric:"#f0e8c8",darkmage:"#9b5cff",bard:"#ff7ad9",alchemist:"#5fd0c0",demonlord:"#8a1020",warlock:"#5a2080",jester:"#e8c040",foe:"#b03040",boss:"#f0c45a"};
 function svg(kind,c){
   c=c||"#f6efe3";
@@ -453,11 +516,12 @@ function choices(opts){
 function unitCard(u,foe){
   const cls=foe?(u.boss?"boss":"foe"):(u.main?"devourer":(u.cls||"foe"));
   const hp=Math.max(0,u.hp), max=foe?u.hpMax:stat(u,"hpMax");
-  return `<div class="card ${foe?"foe":""} ${u.boss?"boss":""} ${u.dead||hp<=0?"dead":""}">
+  return `<div class="card ${foe?"foe":""} ${u.boss?"boss":""} ${u.dead||hp<=0?"dead":""}" data-uid="${u.id||""}">
     <div class="face" style="--c:${CLSCOL[cls]||'#3a2a55'}">${portrait(cls)}</div>
     <div class="name">${u.name}</div>
     <div class="role">${foe?(u.boss?"BOSS":"FOE"):(u.main?"DEVOURER":(CLASSES[u.cls]?CLASSES[u.cls].name:""))}</div>
     <div class="nums">${Math.max(0,hp|0)}/${max|0}</div>
+    <div class="stigs">${stPips(u)}</div>
     <div class="mini"><i style="width:${max?100*hp/max:0}%"></i></div>
     ${foe?"":'<div class="mini mp"><i style="width:'+(u.mpMax?100*u.mp/u.mpMax:0)+'%"></i></div>'}
   </div>`;
@@ -477,12 +541,15 @@ function renderStage(extra){
   }
   if(extra) html+=extra;
   stage.innerHTML=html;
+  stage.querySelectorAll(".card[data-uid]").forEach(el=>{
+    el.onclick=()=>openSt(el.getAttribute("data-uid"));
+  });
 }
 let G=null;
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE);return r?JSON.parse(r):null;}catch(e){return null;}}
 function base(){return {hp:30,hpMax:30,mp:16,mpMax:16,atk:8,def:4,spd:6,int:5,spr:5,luk:5};}
-function makeMain(name){const m=Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],codex:[],gear:{},dead:false,gauge:0},base()); applyCodex(m); return m;}
+function makeMain(name){const m=Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],skillRanks:{strike:1},codex:[],gear:{},dead:false,gauge:0},base()); applyCodex(m); return m;}
 function hirePrice(cls,lv,extra){
   extra=extra||0;
   return 6 + lv*7 + extra*12 + (G&&G.best?G.best*3:0);
@@ -496,7 +563,9 @@ function makeHire(cls,lv){
   if(lv>=5 && Math.random()<0.35){const bonus=pick(["power","mend","ward","veil"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
   if(lv>=10 && Math.random()<0.25){const bonus=pick(["cleave","smite","bolt"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
   for(let i=1;i<lv;i++){s.hpMax+=3;s.hp+=3;s.atk++; if(i%3===0)s.def++; if(i%4===0)s.spd++; if(i%5===0){s.int++;s.spr++;}}
-  const h=Object.assign({id:uid(),name:pick((NAMES[cls]||[]).concat(NAME_POOL)),cls,main:false,lv,xp:0,unspent:0,row:"front",skills,gear:{},dead:false,gauge:0,price:0},s);
+  const ranks={}; skills.forEach(s=>ranks[s]=lv>=10?2:1);
+  if(lv>=16) ranks[skills[0]]=3;
+  const h=Object.assign({id:uid(),name:pick((NAMES[cls]||[]).concat(NAME_POOL)),cls,main:false,lv,xp:0,unspent:Math.floor(lv/5),row:"front",skills,skillRanks:ranks,gear:{},dead:false,gauge:0,price:0},s);
   h.price=hirePrice(cls,lv,extra);
   h.extra=extra;
   return h;
@@ -560,7 +629,7 @@ function titleMenu(){
 function newGame(){
   say("Name the Devourer.");
   choices([{input:true,ph:"Hunter name",label:"Next — guild",fn:n=>{
-    G={name:n||"Kaizo",guild:"",gold:50,pots:{hp:[2,0,0,0,0],mp:[1,0,0,0,0]},debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
+    G={name:n||"Kaizo",guild:"",gold:50,pots:{hp:[2,0,0,0,0],mp:[1,0,0,0,0],salve:1},debt:0,stash:[],expedition:[],picked:[],outing:false,restockInn:true,innStock:[],roster:[],party:[],best:0,bestRank:"G"};
     G.roster=[makeMain(G.name)];G.party=["main"];
     choices([{input:true,ph:"Guild",label:"Found it",fn:g=>{G.guild=g||"No Banner";save();hub();}}]);
   }}]);
@@ -706,18 +775,48 @@ function atb(){
   enemy(G.combat.enemies.find(e=>e.hp>0));
 }
 function ally(u){
-  hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+u.mpMax+(u._setOn?" · SET":""));
+  if(tickSt(u)) return after();
+  hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+u.mpMax+(u._setOn?" · SET":"")+stTag(u));
   const opts=[{label:"Attack",icon:"⚔️",fn:()=>tgt(t=>act(u,"strike",t))},{label:"Skills",icon:"✨",fn:()=>sk(u)},
     {label:"Defend",icon:"🛡️",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,u.mpMax);say(u.name+" guards.");after();}},
     {label:"Potion",icon:"🧪",fn:()=>potionMenu(u)}];
   if(u.main&&!G.combat.devourUsed) opts.splice(3,0,{label:"Devour",icon:"🕳️",fn:()=>devourMenu(u)});
+  if(party().some(x=>x.st&&Object.keys(x.st).length) || (G.pots&&G.pots.salve))
+    opts.push({label:"Cleanse",icon:"✨",fn:()=>cleanseMenu(u)});
+  choices(opts);
+}
+function stExplain(k){
+  return ({bleed:"Bleed — HP each turn",burn:"Burn — HP each turn",poison:"Poison — HP each turn",stun:"Stun — skip next action",mark:"Mark — takes extra hits",weak:"Weak — deals less, takes more"})[k]||k;
+}
+function openSt(id){
+  const u=(G.roster||[]).find(x=>x.id===id) || ((G.combat&&G.combat.enemies)||[]).find(x=>x.id===id);
+  if(!u) return;
+  const keys=u.st?Object.keys(u.st):[];
+  const box=document.getElementById("popbox");
+  box.innerHTML="<h3>"+u.name+"</h3>"+(keys.length?keys.map(k=>"<div style='margin-top:6px'><b>"+k+"</b> · "+(u.st[k].t||"?")+" turn(s)<div class='sys'>"+stExplain(k)+"</div></div>").join(""):"<div class='sys'>No ailments.</div>")+"<button type='button' id='popx'>Close</button>";
+  document.getElementById("pop").className="on";
+  document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
+}
+function cleanseMenu(from){
+  ensurePots();
+  const sick=party().filter(x=>x.st&&Object.keys(x.st).length);
+  const opts=[];
+  if(G.pots.salve>0 && sick.length) opts.push({list:true,label:"Salve ×"+G.pots.salve+" (cure all on one)",fn:()=>salvePick(true,from)});
+  living().filter(c=>c.skills.includes("mend")&&c.mp>=mpCost(c,"mend")).forEach(c=>{
+    opts.push({list:true,label:c.name+" Mend (R"+skR(c,"mend")+(skR(c,"mend")>=2?" clears all":" eases one")+")",fn:()=>{
+      choices(party().filter(t=>!t.dead).map(t=>({list:true,label:t.name+stTag(t),fn:()=>act(c,"mend",t)})).concat([{label:"Back",fn:()=>cleanseMenu(from)}]));
+    }});
+  });
+  if(!opts.length){say("Need a Salve or a Mend caster with MP.");return ally(from);}
+  opts.push({label:"Back",fn:()=>ally(from)});
   choices(opts);
 }
 function sk(u){
+  ensureRanks(u);
   const opts=u.skills.filter(s=>SKILLS[s]).map(s=>{
-    const S=SKILLS[s];
-    return {label:S.n+" · "+S.mp+" MP",fn:()=>{
-      if(u.mp<S.mp){say("No MP.");return ally(u);}
+    const S=SKILLS[s], r=skR(u,s), cost=mpCost(u,s);
+    return {label:S.n+" R"+r+" · "+cost+" MP",fn:()=>{
+      if(u.mp<cost){say("No MP.");return ally(u);}
       if(s==="mend") return choices(living().map(t=>({label:"Mend "+t.name,fn:()=>act(u,s,t)})).concat([{label:"Back",fn:()=>ally(u)}]));
       if(["taunt","ward","hymn","aegis","mist","veil","dread","pact","loaded","jackpot"].includes(s)) return act(u,s,null);
       tgt(t=>act(u,s,t));
@@ -726,11 +825,13 @@ function sk(u){
   opts.push({label:"Back",fn:()=>ally(u)}); choices(opts);
 }
 function tgt(cb){const es=G.combat.enemies.filter(e=>e.hp>0); if(es.length===1)return cb(es[0]);
-  choices(es.map(e=>({label:e.name+" "+e.hp+"/"+e.hpMax,fn:()=>cb(e)})).concat([{label:"Back",fn:atb}]));}
+  choices(es.map(e=>({label:e.name+" "+e.hp+"/"+e.hpMax+stTag(e),fn:()=>cb(e)})).concat([{label:"Back",fn:atb}]));}
 function phys(a,t,mult){
   let m=mult; if(a.row==="back")m*=0.7;
   const fx=a._setFx||{}; const cx=a._cx||{};
-  if(t.marked)m*=(1.25+(fx.markPct||0)/100);
+  if((t.marked)||(t.st&&t.st.mark))m*=(1.25+(fx.markPct||0)/100);
+  if(t.st&&t.st.weak)m*=1.2;
+  if(a.st&&a.st.weak)m*=0.8;
   if(fx.atkPct)m*=(1+fx.atkPct/100);
   if(cx.atkPct)m*=(1+cx.atkPct/100);
   const crit=(fx.crit||0)+(cx.crit||0);
@@ -748,23 +849,26 @@ function mag(a,t,mult){
   return raw;
 }
 function act(u,sid,t){
-  const S=SKILLS[sid]; if(S.mp){if(u.mp<S.mp){say("No MP");return ally(u);} u.mp-=S.mp;}
+  const S=SKILLS[sid]; const r=skR(u,sid); const cost=mpCost(u,sid);
+  if(cost){if(u.mp<cost){say("No MP");return ally(u);} u.mp-=cost;}
   let msg="";
-  if(sid==="taunt"||sid==="dread"){G.combat.taunt=u.id;msg=u.name+(sid==="dread"?" looses Dread.":" taunts.");}
-  else if(sid==="pact"){u.hp=Math.max(1,u.hp-6);u.mp=clamp(u.mp+8,0,u.mpMax);msg=u.name+" cuts a pact (−6 HP, +8 MP).";}
-  else if(sid==="loaded"){G.combat.goldMult=(G.combat.goldMult||1)+1; G.combat.luckDrop=1; msg=u.name+" loads the dice. Next purse and drop lean lucky.";}
-  else if(sid==="jackpot"){G.lootBudget=(G.lootBudget||0)+1; G.combat.doubleDrop=1; G.combat.forceQ="Rare"; msg=u.name+" rigs the table. Extra drop + double on the next hit.";}
-  else if(sid==="doom"){msg=u.name+" dooms "+t.name+" for "+mag(u,t,1.45);}
-  else if(sid==="curse"){t.marked=1;msg=u.name+" curses "+t.name+" for "+mag(u,t,0.9);}
-  else if(sid==="ward"||sid==="aegis"){u.ward=2;msg=u.name+" wards."; const ap=(u._setFx&&u._setFx.aegis)||0; if(sid==="aegis"&&ap)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*(ap/100)),0,stat(u,"hpMax"));}
-  else if(sid==="hymn"){const add=(u._setFx&&u._setFx.hymn)||1; const hh=(u._setFx&&u._setFx.hymnHeal)||0; living().forEach(p=>{p.atk+=add; if(hh)p.hp=clamp(p.hp+hh,0,stat(p,"hpMax"));});msg=u.name+" hymns +"+add+" ATK"+(hh?(" +"+hh+" HP"):"")+".";}
-  else if(sid==="veil"||sid==="mist"){u.row="back";msg=u.name+" fades."; if(sid==="mist"&&u._setFx&&u._setFx.mistWard)u.ward=(u.ward||0)+1;}
-  else if(sid==="mend"){const extra=1+((u._setFx&&u._setFx.mendPct)||0)/100; const h=Math.floor((8+stat(u,"spr"))*extra); t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); if(u._setFx&&u._setFx.mendWard)t.ward=(t.ward||0)+1; msg=u.name+" mends "+t.name+" +"+h;}
-  else if(sid==="bolt"||sid==="vial"){msg=u.name+" burns "+t.name+" for "+mag(u,t,sid==="bolt"?1.2:1);}
-  else if(sid==="drain"){const n=mag(u,t,0.8); u.hp=clamp(u.hp+Math.ceil(n/2),0,stat(u,"hpMax")); msg=u.name+" drains "+n;}
-  else if(sid==="cleave"||sid==="flurry"){G.combat.enemies.filter(e=>e.hp>0).forEach(e=>phys(u,e,0.7)); msg=u.name+" sweeps.";}
-  else if(sid==="mark"){t.marked=1;msg=u.name+" marks "+t.name;}
-  else msg=u.name+" hits "+t.name+" for <span class='hurt'>"+phys(u,t,sid==="power"?1.4:1)+"</span>.";
+  if(sid==="taunt"||sid==="dread"){G.combat.taunt=u.id; if(r>=2) G.combat.enemies.filter(e=>e.hp>0).forEach(e=>putSt(e,"weak",1,1+r)); msg=u.name+(sid==="dread"?" looses Dread":" taunts")+" R"+r+".";}
+  else if(sid==="pact"){u.hp=Math.max(1,u.hp-(7-r));u.mp=clamp(u.mp+6+r*2,0,u.mpMax);msg=u.name+" cuts a pact R"+r+".";}
+  else if(sid==="loaded"){G.combat.goldMult=(G.combat.goldMult||1)+r; G.combat.luckDrop=1; msg=u.name+" loads the dice R"+r+".";}
+  else if(sid==="jackpot"){G.lootBudget=(G.lootBudget||0)+r; G.combat.doubleDrop=1; G.combat.forceQ=r>=3?"Epic":"Rare"; msg=u.name+" rigs the table R"+r+".";}
+  else if(sid==="doom"){msg=u.name+" dooms "+t.name+" for "+mag(u,t,1.3+0.2*r); putSt(t,"weak",1,r);}
+  else if(sid==="curse"){putSt(t,"mark",1,2+r); t.marked=1; putSt(t,"weak",1,r); msg=u.name+" curses "+t.name+" for "+mag(u,t,0.75+0.1*r);}
+  else if(sid==="ward"||sid==="aegis"){u.ward=1+r;msg=u.name+" wards R"+r+"."; const ap=(u._setFx&&u._setFx.aegis)||0; if(sid==="aegis"&&ap)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*(ap/100)),0,stat(u,"hpMax"));}
+  else if(sid==="hymn"){const add=((u._setFx&&u._setFx.hymn)||1)+r-1; const hh=((u._setFx&&u._setFx.hymnHeal)||0)+ (r>=2?r:0); living().forEach(p=>{p.atk+=add; if(hh)p.hp=clamp(p.hp+hh,0,stat(p,"hpMax"));});msg=u.name+" hymns R"+r+" +"+add+" ATK.";}
+  else if(sid==="veil"||sid==="mist"){u.row="back";msg=u.name+" fades R"+r+"."; if(sid==="mist"&&u._setFx&&u._setFx.mistWard)u.ward=(u.ward||0)+r;}
+  else if(sid==="mend"){const extra=1+((u._setFx&&u._setFx.mendPct)||0)/100; const h=Math.floor((6+r*3+stat(u,"spr"))*extra); t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); clearSt(t,r>=2); if(u._setFx&&u._setFx.mendWard)t.ward=(t.ward||0)+1; msg=u.name+" mends "+t.name+" +"+h+(r>=2?" and clears ailments":" and eases one ailment")+" R"+r;}
+  else if(sid==="bolt"||sid==="vial"){const n=mag(u,t,(sid==="bolt"?1.05:0.9)+0.15*r); putSt(t,"burn",1+r,1+r); msg=u.name+" burns "+t.name+" for "+n+" R"+r;}
+  else if(sid==="drain"){const n=mag(u,t,0.7+0.15*r); u.hp=clamp(u.hp+Math.ceil(n*(0.4+0.1*r)),0,stat(u,"hpMax")); msg=u.name+" drains "+n+" R"+r;}
+  else if(sid==="cleave"||sid==="flurry"){G.combat.enemies.filter(e=>e.hp>0).forEach(e=>{phys(u,e,0.55+0.12*r); if(r>=2) putSt(e,"bleed",r,2);}); msg=u.name+" sweeps R"+r+".";}
+  else if(sid==="mark"){putSt(t,"mark",1,2+r); t.marked=1; msg=u.name+" marks "+t.name+" R"+r+" ("+(2+r)+" turns).";}
+  else if(sid==="bash"){const n=phys(u,t,1+0.1*r); if(d(100)<=20*r){putSt(t,"stun",1,1); msg=u.name+" stuns "+t.name+" for "+n;} else msg=u.name+" bashes "+t.name+" for "+n;}
+  else if(sid==="stab"){const n=phys(u,t,(u.row==="back"?1.35:1)+0.1*r); putSt(t,"bleed",r,2); msg=u.name+" cuts "+t.name+" for "+n+" +bleed.";}
+  else {const n=phys(u,t,sid==="power"?1.2+0.2*r:1+0.08*(r-1)); if(sid==="smite"&&r>=2) putSt(t,"burn",r,2); msg=u.name+" hits "+t.name+" for <span class='hurt'>"+n+"</span> R"+r+".";}
   say(msg,"skill"); if(t&&t.hp<=0){t.hp=0;say(t.name+" drops.");} after();
 }
 function devourMenu(u){
@@ -819,7 +923,7 @@ function applyCodex(m){
     const T=traitDef(c.n), r=c.r||1;
     ["hp","atk","def","spd","int","spr","luk","atkPct","defPct","leech","devour","gold","thorns","mp","crit","save"].forEach(k=>{if(T[k])cx[k]+=T[k]*r;});
     if(cx.save>1)cx.save=1;
-    if(T.sid&&!m.skills.includes(T.sid)) m.skills.push(T.sid);
+    if(T.sid&&!m.skills.includes(T.sid)){ m.skills.push(T.sid); m.skillRanks=m.skillRanks||{}; if(!m.skillRanks[T.sid]) m.skillRanks[T.sid]=1; }
   });
   m._cx=cx;
   m.mpMax=16+cx.mp;
@@ -852,6 +956,7 @@ function steal(){
   hud();
 }
 function enemy(e){
+  if(tickSt(e)) return after();
   const ts=living(); if(!ts.length)return wipe();
   let t=G.combat.taunt&&ts.find(x=>x.id===G.combat.taunt);
   if(!t){const f=ts.filter(x=>x.row==="front"); t=pick(f.length&&d(10)>2?f:ts);}
@@ -931,7 +1036,7 @@ function winFight(){
     const cap=[4,8,12,16,22,28,34,40,46,55][G.zone||0]+(G.area||0)+(G.red?3:0);
     if(u.lv>cap){say(u.name+" outlevels this rank (cap Lv "+cap+"). No XP.");return;}
     u.xp+=6+G.zone*2;
-    if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; say(u.name+" Lv"+u.lv+" (+2 pts)","good");}
+    if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; ensureRanks(u); if(u.lv%4===0){const pool=(u.skills||[]).filter(s=>(u.skillRanks[s]||1)<3); if(pool.length){const s=pick(pool); u.skillRanks[s]=(u.skillRanks[s]||1)+1; say(u.name+" ranks "+(SKILLS[s]?SKILLS[s].n:s)+" to R"+u.skillRanks[s],"rare");}} say(u.name+" Lv"+u.lv+" (+2 pts)","good");}
   });
   const wasBoss=G.combat.boss; G.combat=null; save(); hud();
   G._afterCamp=()=>{
@@ -973,6 +1078,7 @@ function restCamp(){
 function restCampChoices(){
   choices([
     {label:"Use potion",fn:restPotion},
+    {label:"Cleanse",fn:()=>salvePick(false)},
     {label:"Heal skill",fn:restSkillPick},
     {label:"Review loot",fn:()=>reviewLootTo(restCampChoices)},
     {label:"Move on",fn:()=>G._afterCamp()}
@@ -986,6 +1092,7 @@ function restPotion(){
     if(G.pots.hp[i]>0) opts.push({list:true,label:T.n+" HP +"+T.hp+" ×"+G.pots.hp[i],fn:()=>restPotPick("hp",i)});
     if(G.pots.mp[i]>0) opts.push({list:true,label:T.n+" MP +"+T.mp+" ×"+G.pots.mp[i],fn:()=>restPotPick("mp",i)});
   });
+  if(G.pots.salve>0) opts.push({list:true,label:"Salve ×"+G.pots.salve,fn:()=>salvePick(false)});
   opts.push({label:"Back",fn:restCampChoices});
   choices(opts);
 }
@@ -1208,21 +1315,34 @@ function barracks(){
 function skillsHub(back){
   back=back||hub;
   say("Whose skills?");
-  choices(party().map(u=>({list:true,label:u.name+" · "+(u.skills||[]).length+" arts",fn:()=>skillsOf(u,back)})).concat([{label:"Spend stat points",fn:statsMenu},{label:"Back",fn:back}]));
+  choices(party().map(u=>({list:true,label:u.name+" · "+(u.skills||[]).length+" arts",fn:()=>skillsOf(u,back)})).concat([{label:"Rank an art (3 pts)",fn:()=>rankArts(back)},{label:"Spend stat points",fn:statsMenu},{label:"Back",fn:back}]));
 }
 function skillsOf(u,back){
   back=back||hub;
   const list=u.skills||[];
   if(!list.length){say(u.name+" knows nothing.");return skillsHub(back);}
   say("<b>"+u.name+"</b> — tap an art.");
-  list.forEach(sid=>{const I=skillInfo(sid); say("<b>"+I.title+"</b> — "+I.body);});
-  choices(list.map(sid=>({list:true,label:skillInfo(sid).title+" · "+((SKILLS[sid]||{}).mp||0)+" MP",fn:()=>{
+  list.forEach(sid=>{const I=skillInfo(sid); say("<b>"+I.title+" R"+skR(u,sid)+"</b> — "+I.body);});
+  choices(list.map(sid=>({list:true,label:skillInfo(sid).title+" R"+skR(u,sid)+" · "+mpCost(u,sid)+" MP",fn:()=>{
     const I=skillInfo(sid);
     const box=document.getElementById("popbox");
-    box.innerHTML="<h3>"+I.title+"</h3><div style='margin-top:8px'>"+I.body+"</div><button type='button' id='popx'>Close</button>";
+    box.innerHTML="<h3>"+I.title+" R"+skR(u,sid)+"</h3><div style='margin-top:8px'>"+I.body+"</div><div class='sys'>R2 stronger. R3 −1 MP.</div><button type='button' id='popx'>Close</button>";
     document.getElementById("pop").className="on";
     document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
     skillsOf(u,back);
+  }})).concat([{label:"Back",fn:()=>skillsHub(back)}]));
+}
+function rankArts(back){
+  back=back||hub;
+  const ready=party().filter(u=>(u.unspent||0)>=3 && (u.skills||[]).some(s=>skR(u,s)<3));
+  if(!ready.length){say("Need 3 unspent on someone with a skill under R3.");return skillsHub(back);}
+  choices(ready.map(u=>({list:true,label:u.name+" · "+u.unspent+" pts",fn:()=>{
+    const pool=u.skills.filter(s=>SKILLS[s]&&skR(u,s)<3);
+    choices(pool.map(s=>({list:true,label:(SKILLS[s].n)+" R"+skR(u,s)+" → R"+(skR(u,s)+1),fn:()=>{
+      ensureRanks(u); u.skillRanks[s]=skR(u,s)+1; u.unspent-=3; save();
+      say(u.name+" ranks "+SKILLS[s].n+" to R"+u.skillRanks[s]+".");
+      rankArts(back);
+    }})).concat([{label:"Back",fn:()=>rankArts(back)}]));
   }})).concat([{label:"Back",fn:()=>skillsHub(back)}]));
 }
 function statsMenu(){
@@ -1247,7 +1367,13 @@ function equipOnto(u){
   if(!items.length){say("Nothing that fits.");return gearMenu();}
   choices(items.map(it=>({list:true,label:(it.rare?"★ ":"")+it.n+" · "+SLOTN[it.slot],fn:()=>inspectItem(it,u,"stash",()=>equipOnto(u))})).concat([{label:"Done",fn:gearMenu}]));
 }
-function church(){const c=14+G.debt; choices([{label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;}); hud(); hub();}},{label:"Back",fn:hub}]);}
+function church(){const c=14+G.debt; const wash=8;
+  choices([
+    {label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;u.st={};}); hud(); hub();}},
+    {label:"Wash ailments "+wash+"g",fn:()=>{if(G.gold<wash){say("No gold.");return church();} G.gold-=wash; party().forEach(u=>u.st={}); hud(); say("The font takes the rot."); church();}},
+    {label:"Back",fn:hub}
+  ]);
+}
 function shop(){
   ensurePots();
   say("Shop. Best rank "+(G.bestRank||"G")+" unlocks higher flasks.");
@@ -1263,6 +1389,11 @@ function shop(){
       G.gold-=T.mpG; G.pots.mp[i]++; hud(); say("Bought "+T.n+" MP."); shop();
     }});
   });
+  const salveG=12+(G.best||0)*4;
+  opts.push({list:true,label:"Salve (cure all ailments) — "+salveG+"g ×"+(G.pots.salve||0),fn:()=>{
+    if(G.gold<salveG){say("No gold.");return shop();}
+    G.gold-=salveG; G.pots.salve=(G.pots.salve||0)+1; hud(); say("Bought a Salve."); shop();
+  }});
   opts.push({label:"Back",fn:hub});
   choices(opts);
 }
