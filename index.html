@@ -19,16 +19,20 @@ body[data-scene="hub"] #stage{background:radial-gradient(ellipse at 50% 0%,#5a3a
 body[data-scene="world"] #stage{background:radial-gradient(ellipse at 50% 10%,#245a4a 0%,transparent 55%),linear-gradient(#102018,#0a1210 70%,#1a2a18)}
 body[data-scene="combat"] #stage{background:radial-gradient(ellipse at 50% 0%,#6a2048 0%,transparent 50%),linear-gradient(#2a1020,#100810 65%,#3a1810)}
 body[data-scene="camp"] #stage{background:radial-gradient(ellipse at 50% 80%,#c45a20 0%,transparent 45%),linear-gradient(#1a1020,#0c0a10)}
-body[data-scene="combat"] #stage,body[data-scene="camp"] #stage{max-height:24dvh;overflow:hidden;padding-top:4px;flex:0 0 auto}
-body[data-scene="combat"] .card,body[data-scene="camp"] .card{width:56px !important;padding:3px 2px 5px !important;border-radius:10px}
-body[data-scene="combat"] .face,body[data-scene="camp"] .face{width:48px !important;height:56px !important;margin-bottom:2px;border-radius:7px}
-body[data-scene="combat"] .face svg,body[data-scene="camp"] .face svg{width:48px !important;height:56px !important}
+body[data-scene="combat"] #stage,body[data-scene="camp"] #stage{max-height:38dvh;min-height:30dvh;overflow:hidden;padding:6px 8px 2px;flex:0 0 auto}
+body[data-scene="combat"] .card,body[data-scene="camp"] .card{width:58px !important;padding:3px 2px 4px !important;border-radius:10px}
+body[data-scene="combat"] .face,body[data-scene="camp"] .face{width:44px !important;height:50px !important;margin-bottom:2px;border-radius:7px}
+body[data-scene="combat"] .face svg,body[data-scene="camp"] .face svg{width:44px !important;height:50px !important}
 body[data-scene="combat"] .role,body[data-scene="camp"] .role{display:none !important}
 body[data-scene="combat"] .name,body[data-scene="camp"] .name{font-size:9px}
 body[data-scene="combat"] .nums,body[data-scene="camp"] .nums{font-size:8px}
 body[data-scene="combat"] .stigs,body[data-scene="camp"] .stigs{font-size:7px;min-height:8px}
-body[data-scene="combat"] .rowcards,body[data-scene="camp"] .rowcards{gap:4px;margin-bottom:2px}
-body[data-scene="combat"] #log,body[data-scene="camp"] #log{height:132px}
+body[data-scene="combat"] .rowcards,body[data-scene="camp"] .rowcards{gap:5px;margin-bottom:4px}
+body[data-scene="combat"] #log,body[data-scene="camp"] #log{height:108px}
+body[data-scene="combat"] #choices,body[data-scene="camp"] #choices{padding:4px 8px 8px;gap:6px}
+body[data-scene="combat"] button.opt,body[data-scene="camp"] button.opt{min-height:48px;padding:4px 3px;font-size:10px}
+body[data-scene="combat"] button.opt .ic,body[data-scene="camp"] button.opt .ic{width:26px;height:26px}
+body[data-scene="combat"] button.opt .ic svg,body[data-scene="camp"] button.opt .ic svg{width:14px;height:14px}
 #log,#choices{position:relative;z-index:10}
 header{padding:10px 16px 8px;border-bottom:1px solid #c4a05a44;background:linear-gradient(180deg,#24182e,#120e18);box-shadow:0 10px 28px #000a}
 h1{margin:0;font-family:Cinzel,serif;font-size:14px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 22px #f0c45a66}
