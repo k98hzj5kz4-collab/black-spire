@@ -173,7 +173,7 @@ function usePot(kind,i,u,inFight){
   G.pots[kind][i]--;
   const T=POT_TIERS[i];
   if(kind==="hp") u.hp=clamp(u.hp+T.hp,0,stat(u,"hpMax"));
-  else u.mp=clamp(u.mp+T.mp,0,u.mpMax);
+  else u.mp=clamp(u.mp+T.mp,0,stat(u,"mpMax"));
   hud();
   say(u.name+" drinks "+T.n+" "+kind.toUpperCase()+".");
   if(inFight) after(); else restCampChoices();
@@ -527,7 +527,7 @@ function unitCard(u,foe){
     <div class="nums">${Math.max(0,hp|0)}/${max|0}</div>
     <div class="stigs">${stPips(u)}</div>
     <div class="mini"><i style="width:${max?100*hp/max:0}%"></i></div>
-    ${foe?"":'<div class="mini mp"><i style="width:'+(u.mpMax?100*u.mp/u.mpMax:0)+'%"></i></div>'}
+    ${foe?"":'<div class="mini mp"><i style="width:'+(stat(u,"mpMax")?100*u.mp/stat(u,"mpMax"):0)+'%"></i></div>'}
   </div>`;
 }
 function setScene(s){document.body.setAttribute("data-scene",s||"hub");}
@@ -594,7 +594,9 @@ function gearBonus(u){
 function stat(u,k){
   const b=gearBonus(u); const c=u._cx||{};
   if(k==="hpMax") return u.hpMax+(b.hp||0)+(c.hp||0);
-  return (u[k]||0)+(b[k]||0)+(c[k]||0);
+  if(k==="mpMax") return (u.mpMax||16)+(c.mp||0);
+  const hymn=(k==="atk"&&u._hymn)?u._hymn:0;
+  return (u[k]||0)+(b[k]||0)+(c[k]||0)+hymn;
 }
 function hud(){
   const all=party(),hp=all.reduce((a,u)=>a+Math.max(0,u.hp),0),hpm=all.reduce((a,u)=>a+stat(u,"hpMax"),0)||1;
@@ -764,7 +766,7 @@ function pack(zi,boss){
 function nextWave(){ G.wave++; startFight(pack(G.zone,false),false); }
 function startFight(enemies,boss){
   G.combat={enemies,boss,devourUsed:false,taunt:null};
-  living().forEach(u=>u.gauge=stat(u,"spd")); enemies.forEach(e=>e.gauge=e.spd);
+  living().forEach(u=>{u.gauge=stat(u,"spd"); u._hymn=0;}); enemies.forEach(e=>e.gauge=e.spd);
   living().forEach(u=>{
     gearBonus(u);
     if(u._setFx&&u._setFx.taunt){G.combat.taunt=u.id; say(u.name+"'s set pulls every eye. Auto-Taunt.");}
@@ -788,9 +790,9 @@ function atb(){
 }
 function ally(u){
   if(tickSt(u)) return after();
-  hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+u.mpMax+(u._setOn?" · SET":"")+stTag(u));
+  hud(); say("<span class='skill'>"+u.name+" ready</span> MP "+u.mp+"/"+stat(u,"mpMax")+(u._setOn?" · SET":"")+stTag(u));
   const opts=[{label:"Attack",icon:"⚔️",fn:()=>tgt(t=>act(u,"strike",t))},{label:"Skills",icon:"✨",fn:()=>sk(u)},
-    {label:"Defend",icon:"🛡️",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,u.mpMax);say(u.name+" guards.");after();}},
+    {label:"Defend",icon:"🛡️",fn:()=>{u.defending=1;u.mp=clamp(u.mp+2,0,stat(u,"mpMax"));say(u.name+" guards.");after();}},
     {label:"Potion",icon:"🧪",fn:()=>potionMenu(u)}];
   if(u.main&&!G.combat.devourUsed) opts.splice(3,0,{label:"Devour",icon:"🕳️",fn:()=>devourMenu(u)});
   if(party().some(x=>x.st&&Object.keys(x.st).length) || (G.pots&&G.pots.salve))
@@ -865,13 +867,13 @@ function act(u,sid,t){
   if(cost){if(u.mp<cost){say("No MP");return ally(u);} u.mp-=cost;}
   let msg="";
   if(sid==="taunt"||sid==="dread"){G.combat.taunt=u.id; if(r>=2) G.combat.enemies.filter(e=>e.hp>0).forEach(e=>putSt(e,"weak",1,1+r)); msg=u.name+(sid==="dread"?" looses Dread":" taunts")+" R"+r+".";}
-  else if(sid==="pact"){u.hp=Math.max(1,u.hp-(7-r));u.mp=clamp(u.mp+6+r*2,0,u.mpMax);msg=u.name+" cuts a pact R"+r+".";}
+  else if(sid==="pact"){u.hp=Math.max(1,u.hp-(7-r));u.mp=clamp(u.mp+6+r*2,0,stat(u,"mpMax"));msg=u.name+" cuts a pact R"+r+".";}
   else if(sid==="loaded"){G.combat.goldMult=(G.combat.goldMult||1)+r; G.combat.luckDrop=1; msg=u.name+" loads the dice R"+r+".";}
   else if(sid==="jackpot"){G.lootBudget=(G.lootBudget||0)+r; G.combat.doubleDrop=1; G.combat.forceQ=r>=3?"Epic":"Rare"; msg=u.name+" rigs the table R"+r+".";}
   else if(sid==="doom"){msg=u.name+" dooms "+t.name+" for "+mag(u,t,1.3+0.2*r); putSt(t,"weak",1,r);}
   else if(sid==="curse"){putSt(t,"mark",1,2+r); t.marked=1; putSt(t,"weak",1,r); msg=u.name+" curses "+t.name+" for "+mag(u,t,0.75+0.1*r);}
   else if(sid==="ward"||sid==="aegis"){u.ward=1+r;msg=u.name+" wards R"+r+"."; const ap=(u._setFx&&u._setFx.aegis)||0; if(sid==="aegis"&&ap)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*(ap/100)),0,stat(u,"hpMax"));}
-  else if(sid==="hymn"){const add=((u._setFx&&u._setFx.hymn)||1)+r-1; const hh=((u._setFx&&u._setFx.hymnHeal)||0)+ (r>=2?r:0); living().forEach(p=>{p.atk+=add; if(hh)p.hp=clamp(p.hp+hh,0,stat(p,"hpMax"));});msg=u.name+" hymns R"+r+" +"+add+" ATK.";}
+  else if(sid==="hymn"){const add=((u._setFx&&u._setFx.hymn)||1)+r-1; const hh=((u._setFx&&u._setFx.hymnHeal)||0)+ (r>=2?r:0); living().forEach(p=>{p._hymn=(p._hymn||0)+add; if(hh)p.hp=clamp(p.hp+hh,0,stat(p,"hpMax"));});msg=u.name+" hymns R"+r+" +"+add+" ATK (this fight).";}
   else if(sid==="veil"||sid==="mist"){u.row="back";msg=u.name+" fades R"+r+"."; if(sid==="mist"&&u._setFx&&u._setFx.mistWard)u.ward=(u.ward||0)+r;}
   else if(sid==="mend"){const extra=1+((u._setFx&&u._setFx.mendPct)||0)/100; const h=Math.floor((6+r*3+stat(u,"spr"))*extra); t.hp=clamp(t.hp+h,0,stat(t,"hpMax")); clearSt(t,r>=2); if(u._setFx&&u._setFx.mendWard)t.ward=(t.ward||0)+1; msg=u.name+" mends "+t.name+" +"+h+(r>=2?" and clears ailments":" and eases one ailment")+" R"+r;}
   else if(sid==="bolt"||sid==="vial"){const n=mag(u,t,(sid==="bolt"?1.05:0.9)+0.15*r); putSt(t,"burn",1+r,1+r); msg=u.name+" burns "+t.name+" for "+n+" R"+r;}
@@ -938,8 +940,7 @@ function applyCodex(m){
     if(T.sid&&!m.skills.includes(T.sid)){ m.skills.push(T.sid); m.skillRanks=m.skillRanks||{}; if(!m.skillRanks[T.sid]) m.skillRanks[T.sid]=1; }
   });
   m._cx=cx;
-  m.mpMax=16+cx.mp;
-  if(m.mp>m.mpMax)m.mp=m.mpMax;
+  if(m.mp>stat(m,"mpMax")) m.mp=stat(m,"mpMax");
 }
 function traitLink(n,r){
   return "<button type='button' class='itemlink traitlink' data-tn=\""+n.replace(/"/g,"")+"\" data-tr=\""+(r||1)+"\"><b><u>"+n+(r?(" R"+r):"")+"</u></b></button>";
@@ -1182,7 +1183,7 @@ function spendOn(u,back){
   say(u.name+" unspent "+u.unspent);
   const keys=[["hpMax","HP"],["mpMax","MP"],["atk","ATK"],["def","DEF"],["spd","SPD"],["int","INT"],["spr","SPR"],["luk","LUK"]];
   choices(keys.map(([k,l])=>({label:"+ "+l+" ("+u[k]+")",fn:()=>{
-    u[k]+=k.includes("Max")?4:1; if(k==="hpMax")u.hp=stat(u,"hpMax"); if(k==="mpMax")u.mp=u.mpMax; u.unspent--; spendOn(u,back);
+    u[k]+=k.includes("Max")?4:1; if(k==="hpMax")u.hp=stat(u,"hpMax"); if(k==="mpMax")u.mp=stat(u,"mpMax"); u.unspent--; save(); spendOn(u,back);
   }})).concat([{label:"Back",fn:back}]));
 }
 function statLine(st){
@@ -1361,7 +1362,7 @@ function statsMenu(){
   const m=mainU(); if(m.unspent<=0){say("No points.");return choices([{label:"Back",fn:hub}]);}
   say("Unspent "+m.unspent);
   const keys=[["hpMax","HP"],["mpMax","MP"],["atk","ATK"],["def","DEF"],["spd","SPD"],["int","INT"],["spr","SPR"],["luk","LUK"]];
-  choices(keys.map(([k,l])=>({label:"+ "+l+" ("+m[k]+")",fn:()=>{m[k]+=k.includes("Max")?4:1; if(k==="hpMax")m.hp=m.hpMax; if(k==="mpMax")m.mp=m.mpMax; m.unspent--; statsMenu();}})).concat([{label:"Back",fn:hub}]));
+  choices(keys.map(([k,l])=>({label:"+ "+l+" ("+(k==="mpMax"||k==="hpMax"?stat(m,k):m[k])+")",fn:()=>{m[k]+=k.includes("Max")?4:1; if(k==="hpMax")m.hp=stat(m,"hpMax"); if(k==="mpMax")m.mp=stat(m,"mpMax"); m.unspent--; save(); statsMenu();}})).concat([{label:"Back",fn:hub}]));
 }
 function gearMenu(){
   ensurePots(); say("Stash "+G.stash.length+" · Pots "+potCount());
@@ -1381,7 +1382,7 @@ function equipOnto(u){
 }
 function church(){const c=14+G.debt; const wash=8;
   choices([
-    {label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=u.mpMax;u.dead=false;u.st={};}); hud(); hub();}},
+    {label:"Full mend "+c+"g",fn:()=>{if(G.gold>=c){G.gold-=c;G.debt=0;}else{G.debt+=c-G.gold;G.gold=0;} party().forEach(u=>{u.hp=stat(u,"hpMax");u.mp=stat(u,"mpMax");u.dead=false;u.st={};}); hud(); hub();}},
     {label:"Wash ailments "+wash+"g",fn:()=>{if(G.gold<wash){say("No gold.");return church();} G.gold-=wash; party().forEach(u=>u.st={}); hud(); say("The font takes the rot."); church();}},
     {label:"Back",fn:hub}
   ]);
