@@ -71,6 +71,8 @@ body[data-scene="hub"] #log,body[data-scene="world"] #log{height:100px}
 #log .q-Epic,#log .q-Epic b u{color:#c48aff!important}
 #log .q-Legendary,#log .q-Legendary b u{color:#f0c45a!important}
 .sys{color:var(--dim)}.gold{color:var(--gold)}.hurt{color:#ff7a8a}.good{color:#8ee09a}.rare{color:#ff9ae0}.skill{color:#cbb6ff}
+.sysmsg{color:#9ad4ff;border-left:3px solid #3a9dff;padding:6px 10px;margin:6px 0;background:#0c1a2ecc;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.04em;line-height:1.45}
+.sysmsg b{color:#e8f4ff}
 #choices{padding:8px 10px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#100c18;flex:0 0 auto;z-index:8;max-height:40dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #choices.list{grid-template-columns:1fr}
 button.opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px;padding:6px 4px;border-radius:12px;border:1px solid #8a7344;background:linear-gradient(180deg,#2c2438,#16121e);color:var(--ink);font:inherit;font-size:11px;font-weight:600;text-align:center;box-shadow:0 6px 14px #0006,inset 0 1px 0 #fff2}
@@ -547,6 +549,9 @@ function icKind(label){
   return "star";
 }
 const logEl=document.getElementById("log"),ch=document.getElementById("choices"),stage=document.getElementById("stage");
+function system(body,extra){
+  say("<span class='sysmsg'><b>[SYSTEM]</b> "+body+(extra?("<br>"+extra):"")+"</span>");
+}
 function say(h,c){
   const p=document.createElement("p");if(c)p.className=c;p.innerHTML=h;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;
   p.querySelectorAll(".itemlink").forEach(el=>{
@@ -671,12 +676,12 @@ function titleMenu(){
   document.getElementById("hpb").style.width="0%";
   document.getElementById("mpb").style.width="0%";
   const s=load();
-  say("<b>BLACK SPIRE</b>");
+  system("PLAYER DETECTED.","Black Spire Protocol online. Rank G authorized.");
   say("Ten ranked wilds. Devour. Climb.");
   const opts=[];
   if(s&&s.roster){
     say("Save: <b>"+(s.name||"?")+"</b> of "+(s.guild||"?")+" · "+(s.gold||0)+"g · best "+(s.bestRank||"G"));
-    opts.push({label:"Continue",fn:()=>{G=s; say("Welcome back."); hub();}});
+    opts.push({label:"Continue",fn:()=>{G=s; system("SESSION RESTORED.","Welcome back, hunter."); hub();}});
   }
   opts.push({label:"New game",fn:newGame});
   if(s&&s.roster) opts.push({label:"Delete save",danger:true,fn:()=>{
@@ -695,6 +700,10 @@ function newGame(){
 }
 function boot(){ titleMenu(); }
 function goHub(){
+  if(G.redLock){
+    system("EXTRACTION DENIED.","The Red Gate is sealed. Defeat the instance lord.");
+    return G.combat?ally(mainU()):(typeof waveBreak==="function"?waveBreak():null);
+  }
   if((G.expedition&&G.expedition.length)||(G.outing&&G.picked&&G.picked.length)) return extractScreen();
   G.outing=false; G.picked=[]; G.expedition=G.expedition||[]; G.restockInn=true;
   hub();
@@ -744,16 +753,20 @@ function enterZone(zi){
   if(!zoneOpen(zi)){ say("That rank is sealed."); return world(); }
   G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme); renderStage();
   const opts=z.areas.map((a,i)=>({list:true,label:z.rank+" area "+a+" — boss "+z.bossStd[i]+" (10% unique)",fn:()=>startArea(zi,i,false)}));
-  if(Math.random()<0.12) opts.push({label:"Red Gate: "+z.red,icon:"🟥",fn:()=>startArea(zi,4,true)});
   opts.push({label:"Leave zone",fn:world});
   opts.push({label:"Return to Spirefoot",fn:goHub});
   choices(opts);
 }
 function startArea(zi,ai,red){
-  const z=ZONES[zi]; G.inArea=true;G.area=ai;G.red=red;G.areaName=red?z.red:z.areas[ai];
+  if(!red && Math.random()<0.12){
+    red=true; ai=4;
+    system("WARNING: THE GATE HAS CHANGED COLOR.","This is not the instance you selected. Door seal: ON.");
+  }
+  const z=ZONES[zi]; G.inArea=true;G.area=ai;G.red=red;G.redLock=!!red;G.areaName=red?z.red:z.areas[ai];
   G.waves=red?5:(2+d(3)); G.wave=0; G.setBand=ai<2?0:1;
   G.lootBudget=red?2:(1+d(2));
-  say((red?"<span class='rare'>RED GATE.</span> Guaranteed high loot. ":"")+"Zone "+z.rank+" area "+G.areaName+". "+G.waves+" waves + boss. Party loot cap "+G.lootBudget+".");
+  if(red) system("IRREGULAR GATE CONFIRMED.","Instance: "+z.red+". Extraction locked until the lord is dead.");
+  say((red?"<span class='rare'>RED GATE — "+z.red+".</span> ":"")+"Zone "+z.rank+" area "+G.areaName+". "+G.waves+" waves + boss. Party loot cap "+G.lootBudget+".");
   if(zi>=6 && Math.random()<0.01 && G.roster.length<10 && !G.roster.some(r=>r.cls==="demonlord")) return demonLordEvent();
   if(Math.random()<0.10 && G.roster.length<10 && !G.roster.some(r=>r.cls==="jester"&&!r.dead)) return jesterEvent();
   nextWave();
@@ -961,7 +974,7 @@ function doDevour(u,e){
   u.mp-=8;G.combat.devourUsed=true;
   const w=devourWindow(u);
   if(e.boss){const c=e.hp/e.hpMax<w/2?75:50; say("No execute. Steal "+c+"%."); if(d(100)<=c)steal(); else say("Slips.");}
-  else {say("<span class='rare'>Devour.</span>"); e.hp=0; steal();}
+  else {system("ARISE.","Target consumed. Parsing kit…"); e.hp=0; steal();}
   after();
 }
 const TRAITS=[
@@ -1022,11 +1035,11 @@ function steal(){
   const pool=TRAITS.filter(t=>!/Appetite$/.test(t.n)).concat(TRAITS.filter(t=>t.n===zoneTrait));
   const item=pick(pool.length?pool:TRAITS), have=m.codex.find(c=>c.n===item.n);
   if(have){
-    if(have.r<3){have.r++; say("Codex "+traitLink(have.n,have.r)+" ranked up. Tap the name.","rare");}
+    if(have.r<3){have.r++; system("TRAIT RANK UP.",traitLink(have.n,have.r));}
     else say("Capped: "+traitLink(have.n,have.r));
   } else {
     m.codex.push({n:item.n,r:1,sid:item.sid||null});
-    say("<span class='rare'>Devoured</span> "+traitLink(item.n,1)+" — tap the name.");
+    system("NEW SKILL / TRAIT ACQUIRED.",traitLink(item.n,1)+" — open Codex.");
   }
   applyCodex(m);
   if(item.hp) m.hp=Math.min(stat(m,"hpMax"), m.hp+(item.hp*(have&&have.r?1:1)));
@@ -1105,7 +1118,7 @@ function dropLoot(){
 function winFight(){
   G.roster.slice().forEach(u=>{
     if(!u.main&&u.dead){
-      if(d(100)<=(G.combat.boss?90:85)){say(u.name+" is gone. Permanent.","hurt"); stripDead(u); G.party=G.party.filter(id=>id!==u.id); G.roster=G.roster.filter(r=>r.id!==u.id);}
+      if(d(100)<=(G.combat.boss?90:85)){system("PARTY MEMBER LOST.",u.name+" has left the instance. Permanent."); stripDead(u); G.party=G.party.filter(id=>id!==u.id); G.roster=G.roster.filter(r=>r.id!==u.id);}
       else {u.dead=false;u.hp=1;say(u.name+" crawls back.","good");}
     }
   });
@@ -1132,9 +1145,11 @@ function winFight(){
     const cap=[4,8,12,16,22,28,34,40,46,55][G.zone||0]+(G.area||0)+(G.red?3:0);
     if(u.lv>cap){say(u.name+" outlevels this rank (cap Lv "+cap+"). No XP.");return;}
     u.xp+=6+G.zone*2;
-    if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; ensureRanks(u); if(u.lv%4===0){const pool=(u.skills||[]).filter(s=>(u.skillRanks[s]||1)<3); if(pool.length){const s=pick(pool); u.skillRanks[s]=(u.skillRanks[s]||1)+1; say(u.name+" ranks "+(SKILLS[s]?SKILLS[s].n:s)+" to R"+u.skillRanks[s],"rare");}} say(u.name+" Lv"+u.lv+" (+2 pts)","good");}
+    if(u.xp>=10+u.lv*8){u.xp=0;u.lv++;u.hpMax+=3;u.atk++; u.unspent=(u.unspent||0)+2; ensureRanks(u); if(u.lv%4===0){const pool=(u.skills||[]).filter(s=>(u.skillRanks[s]||1)<3); if(pool.length){const s=pick(pool); u.skillRanks[s]=(u.skillRanks[s]||1)+1; say(u.name+" ranks "+(SKILLS[s]?SKILLS[s].n:s)+" to R"+u.skillRanks[s],"rare");}} system("LEVEL UP.","<b>"+u.name+"</b> Lv"+u.lv+" · Unspent +2");}
   });
-  const wasBoss=G.combat.boss; G.combat=null; save(); hud();
+  const wasBoss=G.combat.boss; G.combat=null;
+  if(wasBoss&&G.redLock){ G.redLock=false; system("SEAL RELEASED.","Instance lord down. Extraction is available."); }
+  save(); hud();
   G._afterCamp=()=>{
     if(!wasBoss && G.wave<G.waves) nextWave();
     else if(!wasBoss && G.wave>=G.waves) startFight(pack(G.zone,true),true);
@@ -1248,7 +1263,9 @@ function warlockCage(){
   ]);
 }
 function wipe(){
-  say("<span class='hurt'>Wipe. Limp home.</span>"); G.inArea=false;G.combat=null;
+  say("<span class='hurt'>Wipe. Limp home.</span>");
+  if(G.redLock) system("INSTANCE FAILED.","Seal broke from the inside. You are expelled.");
+  G.redLock=false; G.red=false; G.inArea=false;G.combat=null;
   G.roster.filter(u=>!u.main&&(u.dead||u.hp<=0)).forEach(stripDead);
   G.roster=G.roster.filter(u=>u.main||(u.hp>0&&!u.dead));
   G.party=G.party.filter(id=>G.roster.some(r=>r.id===id));
@@ -1256,7 +1273,7 @@ function wipe(){
   mainU().hp=Math.max(1,Math.floor(stat(mainU(),"hpMax")*0.3)); save(); goHub();
 }
 function rebirth(){
-  say("Rebirth Lv1. Codex stays.");
+  system("PLAYER DEATH. REBOOT.","Level reset to 1. Codex retained.");
   const old=mainU(),codex=old.codex.slice(),name=old.name;
   G.roster=G.roster.filter(r=>!r.main);
   const m=makeMain(name); m.codex=codex; applyCodex(m); m.hp=stat(m,"hpMax");
