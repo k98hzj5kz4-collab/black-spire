@@ -751,8 +751,15 @@ function rollInnStock(){
   });
   G.restockInn=false;
 }
+function migrateClears(){
+  G.cleared=G.cleared||{};
+  for(let i=0;i<(G.best||0);i++){
+    if(!G.cleared[i] || G.cleared[i].length<4) G.cleared[i]=[0,1,2,3];
+  }
+}
 function hub(){
   ensurePots();
+  migrateClears();
   if(mainU()) applyCodex(mainU());
   G.inArea=false;G.combat=null;G.outing=false;
   if(G.restockInn || !G.innStock || !G.innStock.length) rollInnStock();
@@ -765,18 +772,35 @@ function hub(){
     {label:"Shop",icon:"🛒",fn:shop},{label:"Forge",icon:"🔨",fn:forge},{label:"Codex",icon:"📖",fn:codex},{label:"Title",fn:()=>{save();titleMenu();}}
   ]);
 }
-function zoneOpen(zi){ return zi===0 || zi<=(G.best||0)+1; }
+function clearedAreas(zi){
+  G.cleared=G.cleared||{};
+  return G.cleared[zi]||[];
+}
+function markAreaClear(zi,ai){
+  G.cleared=G.cleared||{};
+  const list=G.cleared[zi]?G.cleared[zi].slice():[];
+  if(ai>=0 && ai<=3 && list.indexOf(ai)<0) list.push(ai);
+  G.cleared[zi]=list.sort((a,b)=>a-b);
+  if(list.length>=4){
+    if(zi>G.best){ G.best=zi; G.bestRank=ZONES[zi].rank; }
+    system("ZONE CLEARED.",ZONES[zi].rank+" "+ZONES[zi].name+" — next rank unsealed.");
+  }
+}
+function zoneOpen(zi){
+  if(zi===0) return true;
+  return clearedAreas(zi-1).length>=4;
+}
 function world(){
   G.outing=true;
   if(!G.expedition) G.expedition=[];
   setScene("world");
-  say("Clear a zone's area to open the next rank. Best: "+(G.bestRank||"G")+".");
+  say("Clear all 4 areas in a zone to unseal the next rank. Best full clear: "+(G.bestRank||"G")+".");
   const zc=["#8a8680","#3d8a4a","#4a6a38","#4a6a8a","#c45a28","#3a2a4a","#c4a060","#6ab0e0","#c48ad0","#d02040"];
   renderStage(`<div class="zonegrid">${ZONES.map((z,i)=>`<div class="ztile" style="border-color:${zoneOpen(i)?zc[i]:"#333"};opacity:${zoneOpen(i)?1:.35}"><b style="color:${zc[i]}">${z.rank}</b>${zoneOpen(i)?z.name.split(" ")[0]:"locked"}</div>`).join("")}</div>`);
   const opts=ZONES.map(z=>{
     if(!zoneOpen(z.id)){
       const need=ZONES[z.id-1];
-      return {list:true,label:z.rank+" "+z.name+" — locked (clear "+need.rank+" first)",fn:()=>{say("Beat an area in "+need.rank+" "+need.name+" first."); world();}};
+      return {list:true,label:z.rank+" "+z.name+" — locked (clear all 4 in "+need.rank+")",fn:()=>{say("Finish every area in "+need.rank+" "+need.name+" first ("+clearedAreas(need.id).length+"/4)."); world();}};
     }
     return {label:z.rank+" "+z.name,icon:"⛰️",fn:()=>enterZone(z.id)};
   });
@@ -785,7 +809,9 @@ function world(){
 function enterZone(zi){
   if(!zoneOpen(zi)){ say("That rank is sealed."); return world(); }
   G.zone=zi; const z=ZONES[zi]; say("<b>"+z.rank+" · "+z.name+"</b> — "+z.theme); renderStage();
-  const opts=z.areas.map((a,i)=>({list:true,label:z.rank+" area "+a+" — boss "+z.bossStd[i]+" (10% unique)",fn:()=>startArea(zi,i,false)}));
+  const done=clearedAreas(zi);
+  const opts=z.areas.map((a,i)=>({list:true,label:(done.indexOf(i)>=0?"✓ ":"")+z.rank+" "+a+" — "+z.bossStd[i]+(done.indexOf(i)>=0?" (cleared)":""),fn:()=>startArea(zi,i,false)}));
+  say(z.rank+" "+z.name+" · areas "+done.length+"/4. Next rank needs all four.");
   opts.push({label:"Leave zone",fn:world});
   opts.push({label:"Return to Spirefoot",fn:goHub});
   choices(opts);
@@ -1291,8 +1317,10 @@ function restSkillTgt(u){
   }})).concat([{label:"Back",fn:restSkillPick}]));
 }
 function areaClear(){
-  G.inArea=false; const z=ZONES[G.zone]; if(G.zone>G.best){G.best=G.zone;G.bestRank=z.rank;}
-  say("<span class='good'>"+G.areaName+" falls.</span>");
+  G.inArea=false; const z=ZONES[G.zone];
+  if(G.red) system("RED INSTANCE CLOSED.","Does not count as an area stamp.");
+  else markAreaClear(G.zone, G.area);
+  say("<span class='good'>"+G.areaName+" falls.</span> "+z.rank+" areas "+clearedAreas(G.zone).length+"/4.");
   if(G.zone>=1 && G.zone<=5 && Math.random()<0.01 && G.roster.length<10 && !G.roster.some(r=>r.cls==="warlock")) return warlockCage();
   areaClearMenu();
 }
