@@ -255,21 +255,23 @@ const BOSS_ALT=[
 ZONES.forEach((z,i)=>{z.bossStd=BOSS_STD[i]; z.bossAlt=BOSS_ALT[i];});
 
 const CLASSES={
-  vanguard:{name:"Vanguard",w:{hp:3,def:3,atk:1},skills:["taunt","bash"]},
-  warrior:{name:"Warrior",w:{hp:2,atk:3,def:1},skills:["cleave","power"]},
-  ranger:{name:"Ranger",w:{atk:2,spd:3},skills:["mark","shot"]},
-  rogue:{name:"Rogue",w:{atk:2,spd:2,luk:2},skills:["stab","veil"]},
-  monk:{name:"Monk",w:{atk:2,spd:2,hp:1},skills:["flurry","palm"]},
-  paladin:{name:"Paladin",w:{atk:2,def:1,spr:2},skills:["smite","aegis"]},
-  cleric:{name:"Cleric",w:{spr:3,hp:2},skills:["mend","ward"]},
-  darkmage:{name:"Dark Mage",w:{int:3,spr:2},skills:["bolt","drain"]},
-  bard:{name:"Bard",w:{spr:2,luk:2,spd:1},skills:["hymn","sting"]},
-  alchemist:{name:"Alchemist",w:{int:2,spd:2},skills:["vial","mist"]}
+  vanguard:{name:"Vanguard",w:{hp:3,def:3,atk:1},skills:["taunt","bash","bulwark"]},
+  warrior:{name:"Warrior",w:{hp:2,atk:3,def:1},skills:["cleave","power","execute"]},
+  ranger:{name:"Ranger",w:{atk:2,spd:2},skills:["mark","shot","volley"]},
+  rogue:{name:"Rogue",w:{atk:2,spd:2,luk:2},skills:["stab","veil","venom"]},
+  monk:{name:"Monk",w:{atk:2,spd:2,hp:1},skills:["flurry","palm","focus"]},
+  paladin:{name:"Paladin",w:{atk:2,def:1,spr:2},skills:["smite","aegis","judge"]},
+  cleric:{name:"Cleric",w:{spr:3,hp:2},skills:["mend","ward","circle"]},
+  darkmage:{name:"Dark Mage",w:{int:3,spr:2},skills:["bolt","drain","hex"]},
+  bard:{name:"Bard",w:{spr:2,luk:2,spd:1},skills:["hymn","sting","discord"]},
+  alchemist:{name:"Alchemist",w:{int:2,spd:2},skills:["vial","mist","bomb"]}
 };
 const CLASS_IDS=Object.keys(CLASSES);
-CLASSES.demonlord={name:"Demon Lord",w:{hp:3,atk:3,int:2},skills:["dread","doom"]};
-CLASSES.warlock={name:"Warlock",w:{int:3,spr:2,luk:1},skills:["curse","pact"]};
-CLASSES.jester={name:"Jester",w:{luk:4,spd:2,int:1},skills:["loaded","jackpot"]};
+const HIRE_IDS=CLASS_IDS.slice();
+const EVENT_CLS=["demonlord","warlock","jester"];
+CLASSES.demonlord={name:"Demon Lord",w:{hp:3,atk:3,int:2},skills:["dread","doom","reign"]};
+CLASSES.warlock={name:"Warlock",w:{int:3,spr:2,luk:1},skills:["curse","pact","siphon"]};
+CLASSES.jester={name:"Jester",w:{luk:4,spd:2,int:1},skills:["loaded","jackpot","juggle"]};
 const NAMES={vanguard:["Brask","Hel"],warrior:["Kael","Ryn"],ranger:["Mira","Vess"],rogue:["Nim","Kett"],monk:["Ash","Kesh"],paladin:["Tor","Ilya"],cleric:["Lio","Wren"],darkmage:["Orth","Sable"],bard:["Lute","Pell"],alchemist:["Pip","Yen"],demonlord:["Vhorr","Ashketh"],warlock:["Mael","Yssra"],jester:["Puck","Nimble"]};
 const NAME_POOL=["Alden","Bram","Cedric","Dorian","Edric","Flint","Gareth","Harlan","Ivor","Joss","Kaelith","Loric","Magnus","Niels","Orin","Pavel","Quill","Rook","Soren","Tristan","Ulric","Viktor","Wynn","Yorick","Zane","Asha","Briar","Cora","Dessa","Elowen","Faye","Gwen","Hester","Iris","Juniper","Kira","Lena","Mirael","Neris","Opal","Priya","Quinn","Rhea","Sablee","Tamsin","Una","Vera","Willa","Yara","Zosia"];
 const SLOTS=["weapon","head","body","hands","acc"];
@@ -342,7 +344,7 @@ function makePiece(zi,cls,setn,slot,q,opts){
   const qm={Uncommon:1,Rare:1.4,Epic:2.1,Legendary:3.0}[q]||1;
   const z=ZONES[zi];
   const C=cls==="any"?{w:{atk:2,def:1,spd:1,int:1,spr:1,hp:1}}:CLASSES[cls];
-  const m=(1+zi*0.85)*qm*(opts.red?1.35:1)*(opts.unique?1.25:1);
+  const m=(0.7+zi*0.55)*qm*(opts.red?1.22:1)*(opts.unique?1.18:1);
   const st={};
   Object.entries(C.w).forEach(([k,v])=>{st[k]=Math.max(1,Math.round(v*m*(slot==="weapon"||slot==="body"?1.25:0.85)));});
   const uniq=!!opts.unique || (q==="Legendary"&&!opts.keepSet);
@@ -365,7 +367,14 @@ const SKILLS={
   bolt:{n:"Dark Bolt",g:"Arcane",mp:5},drain:{n:"Drain",g:"Arcane",mp:6},hymn:{n:"Hymn",g:"Wards",mp:5},
   sting:{n:"Sting",g:"Strikes",mp:3},vial:{n:"Vial",g:"Arcane",mp:4},mist:{n:"Mist",g:"Wards",mp:5},
   dread:{n:"Dread",g:"Wards",mp:5},doom:{n:"Doom",g:"Arcane",mp:7},curse:{n:"Curse",g:"Arcane",mp:5},pact:{n:"Pact",g:"Wards",mp:0},
-  loaded:{n:"Loaded Dice",g:"Wards",mp:4},jackpot:{n:"Jackpot",g:"Wards",mp:6}
+  loaded:{n:"Loaded Dice",g:"Wards",mp:4},jackpot:{n:"Jackpot",g:"Wards",mp:6},
+  bulwark:{n:"Bulwark",g:"Wards",mp:6},execute:{n:"Execute",g:"Strikes",mp:7},
+  volley:{n:"Volley",g:"Sweeps",mp:6},venom:{n:"Venom",g:"Strikes",mp:4},
+  focus:{n:"Focus",g:"Wards",mp:4},judge:{n:"Judgment",g:"Strikes",mp:6},
+  circle:{n:"Circle",g:"Mends",mp:7},hex:{n:"Hex",g:"Arcane",mp:4},
+  discord:{n:"Discord",g:"Arcane",mp:6},bomb:{n:"Bomb",g:"Sweeps",mp:7},
+  reign:{n:"Reign",g:"Wards",mp:7},siphon:{n:"Siphon",g:"Arcane",mp:5},
+  juggle:{n:"Juggle",g:"Strikes",mp:5},maw:{n:"Maw",g:"Wards",mp:5}
 };
 const SKILL_HELP={
   strike:"Basic hit. No MP.",
@@ -394,14 +403,38 @@ const SKILL_HELP={
   curse:"Mark plus magic chip.",
   pact:"Pay 6 HP for 8 MP.",
   loaded:"Next clear: more gold, luckier rarity.",
-  jackpot:"+1 drop budget, double the next drop, Rare floor."
+  jackpot:"+1 drop budget. R3 floors the next drop at Rare.",
+  bulwark:"Ward the whole front line.",
+  execute:"Huge hit if the foe is under 35% HP.",
+  volley:"Shoot every foe. Marks ride along.",
+  venom:"Strike that applies poison.",
+  focus:"Rest MP and clear one ailment on yourself.",
+  judge:"Mark, then a heavy smite.",
+  circle:"Small heal on everyone.",
+  hex:"Weaken a foe and chip them.",
+  discord:"Chance to stun a foe.",
+  bomb:"Hit all foes; burn on a high rank.",
+  reign:"Taunt plus party Ward.",
+  siphon:"Drain MP from a foe into you.",
+  juggle:"Two light hits. Second can crit feel.",
+  maw:"Widen Devour window this fight."
 };
 function skillInfo(sid){
   const S=SKILLS[sid]||{n:sid,mp:"?",g:""};
   return {title:S.n, body:(SKILL_HELP[sid]||"A learned art.")+" · "+S.mp+" MP · "+(S.g||"")};
 }
+function ensureClassSkills(u){
+  if(!u) return;
+  if(u.main){
+    if(!u.skills.includes("maw")) u.skills.push("maw");
+    return;
+  }
+  const C=CLASSES[u.cls]; if(!C||!C.skills) return;
+  C.skills.forEach(s=>{ if(!u.skills.includes(s)) u.skills.push(s); });
+}
 function ensureRanks(u){
   if(!u||!u.skills) return;
+  ensureClassSkills(u);
   u.skillRanks=u.skillRanks||{};
   u.skills.forEach(s=>{ if(u.skillRanks[s]==null) u.skillRanks[s]=1; });
 }
@@ -611,7 +644,7 @@ let G=null;
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE);return r?JSON.parse(r):null;}catch(e){return null;}}
 function base(){return {hp:30,hpMax:30,mp:16,mpMax:16,atk:8,def:4,spd:6,int:5,spr:5,luk:5};}
-function makeMain(name){const m=Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike"],skillRanks:{strike:1},codex:[],gear:{},dead:false,gauge:0},base()); applyCodex(m); return m;}
+function makeMain(name){const m=Object.assign({id:"main",name,main:true,cls:"devourer",lv:1,xp:0,unspent:4,row:"front",skills:["strike","maw"],skillRanks:{strike:1,maw:1},codex:[],gear:{},dead:false,gauge:0},base()); applyCodex(m); return m;}
 function hirePrice(cls,lv,extra){
   extra=extra||0;
   return 6 + lv*7 + extra*12 + (G&&G.best?G.best*3:0);
@@ -624,7 +657,7 @@ function makeHire(cls,lv){
   let extra=0;
   if(lv>=5 && Math.random()<0.35){const bonus=pick(["power","mend","ward","veil"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
   if(lv>=10 && Math.random()<0.25){const bonus=pick(["cleave","smite","bolt"]); if(!skills.includes(bonus)){skills.push(bonus);extra++;}}
-  for(let i=1;i<lv;i++){s.hpMax+=3;s.hp+=3;s.atk++; if(i%3===0)s.def++; if(i%4===0)s.spd++; if(i%5===0){s.int++;s.spr++;}}
+  for(let i=1;i<lv;i++){s.hpMax+=2;s.hp+=2; if(i%2===0)s.atk++; if(i%3===0)s.def++; if(i%5===0)s.spd++; if(i%5===0){s.int++;s.spr++;}}
   const ranks={}; skills.forEach(s=>ranks[s]=lv>=10?2:1);
   if(lv>=16) ranks[skills[0]]=3;
   const h=Object.assign({id:uid(),name:pick((NAMES[cls]||[]).concat(NAME_POOL)),cls,main:false,lv,xp:0,unspent:Math.floor(lv/5),row:"front",skills,skillRanks:ranks,gear:{},dead:false,gauge:0,price:0},s);
@@ -710,8 +743,8 @@ function goHub(){
 }
 function rollInnStock(){
   const n=3+Math.floor(Math.random()*3);
-  const pool=CLASS_IDS.slice().sort(()=>Math.random()-0.5);
-  const cap=Math.max(1,(mainU()&&mainU().lv||1)+2+(G.best||0));
+  const pool=HIRE_IDS.slice().sort(()=>Math.random()-0.5);
+  const cap=Math.max(1,(mainU()&&mainU().lv||1)+Math.min(2,G.best||0));
   G.innStock=pool.slice(0,n).map(cls=>{
     const lv=clamp(1+Math.floor(Math.random()*cap),1,cap);
     return makeHire(cls,lv);
@@ -768,7 +801,7 @@ function startArea(zi,ai,red){
   if(red) system("IRREGULAR GATE CONFIRMED.","Instance: "+z.red+". Extraction locked until the lord is dead.");
   say((red?"<span class='rare'>RED GATE — "+z.red+".</span> ":"")+"Zone "+z.rank+" area "+G.areaName+". "+G.waves+" waves + boss. Party loot cap "+G.lootBudget+".");
   if(zi>=6 && Math.random()<0.01 && G.roster.length<10 && !G.roster.some(r=>r.cls==="demonlord")) return demonLordEvent();
-  if(Math.random()<0.10 && G.roster.length<10 && !G.roster.some(r=>r.cls==="jester"&&!r.dead)) return jesterEvent();
+  if(Math.random()<0.06 && G.roster.length<10 && !G.roster.some(r=>r.cls==="jester"&&!r.dead)) return jesterEvent();
   nextWave();
 }
 function takeRare(cls,lv,back){
@@ -805,9 +838,9 @@ function areaDiff(){
 function foe(name,zi,opts){
   opts=opts||{};
   const m=areaDiff()*(opts.boss?1.70:opts.rare?1.38:1);
-  const hp=Math.round((16+zi*9)*m);
-  const atkM=opts.boss?m*0.72:m;
-  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((6+zi*2.2)*atkM),def:Math.round((2+zi)*m*0.50),spd:4+zi+(opts.rare||opts.unique?2:0),int:4+zi,spr:3+zi,boss:!!opts.boss,rare:!!opts.rare,unique:!!opts.unique,dead:false,gauge:0,marked:0};
+  const hp=Math.round((30+zi*16)*m*(opts.boss?1:1));
+  const atkM=opts.boss?m*0.80:m;
+  return {id:uid(),name,hp,hpMax:hp,atk:Math.round((5+zi*2.4)*atkM),def:Math.round((3+zi*1.2)*m*0.55),spd:4+zi+(opts.rare||opts.unique?2:0),int:4+zi,spr:3+zi,boss:!!opts.boss,rare:!!opts.rare,unique:!!opts.unique,dead:false,gauge:0,marked:0};
 }
 function pack(zi,boss){
   const z=ZONES[zi];
@@ -832,7 +865,7 @@ function pack(zi,boss){
 function nextWave(){ G.wave++; startFight(pack(G.zone,false),false); }
 function startFight(enemies,boss){
   G.combat={enemies,boss,devourUsed:false,taunt:null};
-  living().forEach(u=>{u.gauge=stat(u,"spd"); u._hymn=0;}); enemies.forEach(e=>e.gauge=e.spd);
+  living().forEach(u=>{u.gauge=0; u._hymn=0;}); enemies.forEach(e=>e.gauge=0);
   living().forEach(u=>{
     gearBonus(u);
     if(u._setFx&&u._setFx.taunt){G.combat.taunt=u.id; say(u.name+"'s set pulls every eye. Auto-Taunt.");}
@@ -907,7 +940,7 @@ function sk(u){
     return {label:S.n+" R"+r+" · "+cost+" MP",fn:()=>{
       if(u.mp<cost){say("No MP.");return ally(u);}
       if(s==="mend") return choices(living().map(t=>({label:"Mend "+t.name,fn:()=>act(u,s,t)})).concat([{label:"Back",fn:()=>ally(u)}]));
-      if(["taunt","ward","hymn","aegis","mist","veil","dread","pact","loaded","jackpot"].includes(s)) return act(u,s,null);
+      if(["taunt","ward","hymn","aegis","mist","veil","dread","pact","loaded","jackpot","bulwark","focus","circle","reign","maw"].includes(s)) return act(u,s,null);
       tgt(t=>act(u,s,t));
     }};
   });
@@ -924,10 +957,10 @@ function phys(a,t,mult){
   if(fx.atkPct)m*=(1+fx.atkPct/100);
   if(cx.atkPct)m*=(1+cx.atkPct/100);
   const crit=(fx.crit||0)+(cx.crit||0);
-  if(crit&&d(100)<=crit)m*=1.6;
+  if(crit&&d(100)<=crit)m*=1.45;
   if(t.guard) m*=0.5;
   if(t.veil){ m*=0.55; t.veil=0; }
-  const raw=Math.max(1,Math.floor((stat(a,"atk")*1.1+d(6))*m-t.def*0.35)); t.hp-=raw;
+  const raw=Math.max(1,Math.floor((stat(a,"atk")*1.0+d(4))*m-t.def*0.50)); t.hp-=raw;
   if(cx.leech) a.hp=clamp(a.hp+Math.ceil(raw*cx.leech),0,stat(a,"hpMax"));
   return raw;
 }
@@ -945,8 +978,8 @@ function act(u,sid,t){
   let msg="";
   if(sid==="taunt"||sid==="dread"){G.combat.taunt=u.id; if(r>=2) G.combat.enemies.filter(e=>e.hp>0).forEach(e=>putSt(e,"weak",1,1+r)); msg=u.name+(sid==="dread"?" looses Dread":" taunts")+" R"+r+".";}
   else if(sid==="pact"){u.hp=Math.max(1,u.hp-(7-r));u.mp=clamp(u.mp+6+r*2,0,stat(u,"mpMax"));msg=u.name+" cuts a pact R"+r+".";}
-  else if(sid==="loaded"){G.combat.goldMult=(G.combat.goldMult||1)+r; G.combat.luckDrop=1; msg=u.name+" loads the dice R"+r+".";}
-  else if(sid==="jackpot"){G.lootBudget=(G.lootBudget||0)+r; G.combat.doubleDrop=1; G.combat.forceQ=r>=3?"Epic":"Rare"; msg=u.name+" rigs the table R"+r+".";}
+  else if(sid==="loaded"){G.combat.goldMult=(G.combat.goldMult||1)+0.12*r; G.combat.luckDrop=1; msg=u.name+" loads the dice R"+r+".";}
+  else if(sid==="jackpot"){G.lootBudget=(G.lootBudget||0)+1; if(r>=3) G.combat.forceQ="Rare"; msg=u.name+" rigs the table R"+r+".";}
   else if(sid==="doom"){msg=u.name+" dooms "+t.name+" for "+mag(u,t,1.3+0.2*r); putSt(t,"weak",1,r);}
   else if(sid==="curse"){putSt(t,"mark",1,2+r); t.marked=1; putSt(t,"weak",1,r); msg=u.name+" curses "+t.name+" for "+mag(u,t,0.75+0.1*r);}
   else if(sid==="ward"||sid==="aegis"){u.ward=1+r;msg=u.name+" wards R"+r+"."; const ap=(u._setFx&&u._setFx.aegis)||0; if(sid==="aegis"&&ap)u.hp=clamp(u.hp+Math.floor(stat(u,"hpMax")*(ap/100)),0,stat(u,"hpMax"));}
@@ -959,6 +992,20 @@ function act(u,sid,t){
   else if(sid==="mark"){putSt(t,"mark",1,2+r); t.marked=1; msg=u.name+" marks "+t.name+" R"+r+" ("+(2+r)+" turns).";}
   else if(sid==="bash"){if(t.guard){t.guard=0; say(t.name+"'s shield splits.");} const n=phys(u,t,1+0.1*r); if(d(100)<=20*r){putSt(t,"stun",1,1); msg=u.name+" stuns "+t.name+" for "+n;} else msg=u.name+" bashes "+t.name+" for "+n;}
   else if(sid==="stab"){const n=phys(u,t,(u.row==="back"?1.35:1)+0.1*r); putSt(t,"bleed",r,2); msg=u.name+" cuts "+t.name+" for "+n+" +bleed.";}
+  else if(sid==="bulwark"){living().filter(p=>p.row!=="back").forEach(p=>{p.ward=(p.ward||0)+1;}); msg=u.name+" plants a bulwark. Front Ward 1.";}
+  else if(sid==="execute"){const low=t.hp/t.hpMax<=0.30; const n=phys(u,t,low?1.40+0.12*r:0.80+0.05*r); msg=u.name+" executes "+t.name+" for "+n+(low?" (low).":" — not low enough.");}
+  else if(sid==="volley"){G.combat.enemies.filter(e=>e.hp>0).forEach(e=>phys(u,e,0.40+0.08*r)); msg=u.name+" looses a volley R"+r+".";}
+  else if(sid==="venom"){const n=phys(u,t,0.85+0.08*r); putSt(t,"poison",1,2); msg=u.name+" venoms "+t.name+" for "+n+".";}
+  else if(sid==="focus"){u.mp=clamp(u.mp+2+r,0,stat(u,"mpMax")); clearSt(u,false); msg=u.name+" focuses. Small MP, one ailment eased.";}
+  else if(sid==="judge"){putSt(t,"mark",1,2); t.marked=1; const n=phys(u,t,1.05+0.10*r); msg=u.name+" judges "+t.name+" for "+n+".";}
+  else if(sid==="circle"){const h=3+r+Math.floor(stat(u,"spr")*0.25); living().forEach(p=>p.hp=clamp(p.hp+h,0,stat(p,"hpMax"))); msg=u.name+" circles the party +"+h+".";}
+  else if(sid==="hex"){putSt(t,"weak",1,1+Math.floor(r/2)); const n=mag(u,t,0.85+0.08*r); msg=u.name+" hexes "+t.name+" for "+n+".";}
+  else if(sid==="discord"){const n=mag(u,t,0.75+0.08*r); if(d(100)<=18+10*r){putSt(t,"stun",1,1); msg=u.name+" discords "+t.name+" for "+n+" — stun.";} else msg=u.name+" discords "+t.name+" for "+n+".";}
+  else if(sid==="bomb"){G.combat.enemies.filter(e=>e.hp>0).forEach(e=>{mag(u,e,0.42+0.07*r); if(r>=3) putSt(e,"burn",1,2);}); msg=u.name+" throws a bomb R"+r+".";}
+  else if(sid==="reign"){G.combat.taunt=u.id; living().forEach(p=>p.ward=(p.ward||0)+1); msg=u.name+" reigns. Taunt + Ward 1.";}
+  else if(sid==="siphon"){const n=mag(u,t,0.70+0.08*r); u.mp=clamp(u.mp+2+r,0,stat(u,"mpMax")); msg=u.name+" siphons "+t.name+" ("+n+") +MP.";}
+  else if(sid==="juggle"){const a=phys(u,t,0.48+0.05*r); const b=phys(u,t,0.42+0.05*r); msg=u.name+" juggles "+t.name+" for "+a+"+"+b+".";}
+  else if(sid==="maw"){G.combat.thin=Math.min(0.12,(G.combat.thin||0)+0.03*r); msg=u.name+" opens the maw. Window +"+Math.round(3*r)+"% (cap +12%).";}
   else {const n=phys(u,t,sid==="power"?1.2+0.2*r:1+0.08*(r-1)); if(sid==="smite"&&r>=2) putSt(t,"burn",r,2); msg=u.name+" hits "+t.name+" for <span class='hurt'>"+n+"</span> R"+r+".";}
   say(msg,"skill"); if(t&&t.hp<=0){t.hp=0;say(t.name+" drops.");} else if(t&&t.hp>0) readout(t); after();
 }
@@ -969,7 +1016,7 @@ function devourMenu(u){
   if(!es.length){say("No prey under "+Math.round(w*100)+"%.");return ally(u);}
   choices(es.map(e=>({label:"Devour "+e.name,fn:()=>doDevour(u,e)})).concat([{label:"Back",fn:()=>ally(u)}]));
 }
-function devourWindow(u){return 0.20+((u._cx&&u._cx.devour)||0);}
+function devourWindow(u){return 0.20+((u._cx&&u._cx.devour)||0)+Math.min(0.12,(G.combat&&G.combat.thin)||0);}
 function doDevour(u,e){
   u.mp-=8;G.combat.devourUsed=true;
   const w=devourWindow(u);
@@ -1090,9 +1137,9 @@ function rollQuality(force){
   if(G.combat&&G.combat.forceQ){const q=G.combat.forceQ; G.combat.forceQ=null; return q;}
   let r=Math.random();
   if(G.combat&&G.combat.luckDrop) r*=0.45;
-  if(r<0.002) return "Legendary";
-  if(r<0.012) return "Epic";
-  if(r<0.18) return "Rare";
+  if(r<0.0015) return "Legendary";
+  if(r<0.010) return "Epic";
+  if(r<0.16) return "Rare";
   return "Uncommon";
 }
 function partyCls(){const p=party().filter(u=>!u.main).map(u=>u.cls); return p.length?pick(p):pick(CLASS_IDS);}
