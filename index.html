@@ -1444,40 +1444,55 @@ function inn(){
   choices(opts);
 }
 function barracks(){
+  say("Roster. Tap a hunter to inspect.");
   choices(G.roster.map(u=>{
     const on=G.party.includes(u.id);
-    return {list:true,label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>{
-      if(u.main){u.row=u.row==="front"?"back":"front";return barracks();}
-      if(on){if(G.party.length<=1){say("Keep someone.");return barracks();} G.party=G.party.filter(id=>id!==u.id);}
-      else {if(G.party.length>=5){say("Party 5.");return barracks();} G.party.push(u.id);}
-      barracks();
-    }};
+    return {list:true,label:(on?"● ":"○ ")+u.name+" ["+(u.main?"Devourer":CLASSES[u.cls].name)+"] Lv"+u.lv,fn:()=>hunterSheet(u)};
   }).concat([{label:"Done",fn:hub}]));
+}
+function hunterSheet(u){
+  const on=G.party.includes(u.id);
+  say("<b>"+u.name+"</b> · "+(u.main?"Devourer":CLASSES[u.cls].name)+" Lv"+u.lv+" · "+(u.row||"front")+" · "+(on?"in party":"bench"));
+  say("HP "+u.hp+"/"+stat(u,"hpMax")+" · MP "+u.mp+"/"+stat(u,"mpMax"));
+  say("ATK "+stat(u,"atk")+" · DEF "+stat(u,"def")+" · SPD "+stat(u,"spd")+" · INT "+stat(u,"int")+" · SPR "+stat(u,"spr")+" · LUK "+stat(u,"luk"));
+  const opts=[
+    {list:true,label:"Skills ("+(u.skills||[]).length+")",fn:()=>skillsOf(u,()=>hunterSheet(u))},
+    {list:true,label:"Rank an art",fn:()=>rankArts(()=>hunterSheet(u),u)},
+    {list:true,label:"Spend points ("+(u.unspent||0)+")",fn:()=>statsMenu(u,()=>hunterSheet(u))}
+  ];
+  if(!u.main){
+    opts.push({list:true,label:on?"Bench (leave party)":"Field (join party)",fn:()=>{
+      if(on){if(G.party.length<=1){say("Keep someone in the field.");return hunterSheet(u);} G.party=G.party.filter(id=>id!==u.id);}
+      else {if(G.party.length>=5){say("Party is 5.");return hunterSheet(u);} G.party.push(u.id);}
+      save(); hunterSheet(u);
+    }});
+  }
+  opts.push({list:true,label:"Row: "+(u.row==="back"?"back → front":"front → back"),fn:()=>{u.row=u.row==="back"?"front":"back"; save(); hunterSheet(u);}});
+  opts.push({label:"Back",fn:barracks});
+  choices(opts);
 }
 function skillsHub(back){
   back=back||hub;
-  say("Whose skills?");
-  choices(party().map(u=>({list:true,label:u.name+" · "+(u.skills||[]).length+" arts",fn:()=>skillsOf(u,back)})).concat([{label:"Rank an art (3 pts)",fn:()=>rankArts(back)},{label:"Spend stat points",fn:statsMenu},{label:"Back",fn:back}]));
+  say("Whose skills? Roster, not only the field five.");
+  choices(G.roster.map(u=>({list:true,label:u.name+" · "+(u.skills||[]).length+" arts · R ranks",fn:()=>skillsOf(u,back)})).concat([{label:"Rank an art (3 pts)",fn:()=>rankArts(back)},{label:"Spend stat points",fn:()=>statsMenu(null,back)},{label:"Back",fn:back}]));
 }
 function skillsOf(u,back){
   back=back||hub;
   const list=u.skills||[];
-  if(!list.length){say(u.name+" knows nothing.");return skillsHub(back);}
-  say("<b>"+u.name+"</b> — tap an art.");
-  list.forEach(sid=>{const I=skillInfo(sid); say("<b>"+I.title+" R"+skR(u,sid)+"</b> — "+I.body);});
+  if(!list.length){say(u.name+" knows nothing.");return typeof back==="function"?back():skillsHub(back);}
+  say("<b>"+u.name+"</b> — tap a row for the full text.");
   choices(list.map(sid=>({list:true,label:skillInfo(sid).title+" R"+skR(u,sid)+" · "+mpCost(u,sid)+" MP",fn:()=>{
     const I=skillInfo(sid);
     const box=document.getElementById("popbox");
-    box.innerHTML="<h3>"+I.title+" R"+skR(u,sid)+"</h3><div style='margin-top:8px'>"+I.body+"</div><div class='sys'>R2 stronger. R3 −1 MP.</div><button type='button' id='popx'>Close</button>";
+    box.innerHTML="<h3>"+I.title+" R"+skR(u,sid)+"</h3><div>"+u.name+" · "+mpCost(u,sid)+" MP</div><div style='margin-top:8px'>"+I.body+"</div><div class='sys'>R2 stronger. R3 −1 MP.</div><button type='button' id='popx'>Close</button>";
     document.getElementById("pop").className="on";
     document.getElementById("popx").onclick=()=>document.getElementById("pop").className="";
-    skillsOf(u,back);
-  }})).concat([{label:"Back",fn:()=>skillsHub(back)}]));
+  }})).concat([{label:"Back",fn:back}]));
 }
-function rankArts(back){
+function rankArts(back,only){
   back=back||hub;
-  const ready=party().filter(u=>(u.unspent||0)>=3 && (u.skills||[]).some(s=>skR(u,s)<3));
-  if(!ready.length){say("Need 3 unspent on someone with a skill under R3.");return skillsHub(back);}
+  const ready=(only?[only]:G.roster).filter(u=>(u.unspent||0)>=3 && (u.skills||[]).some(s=>skR(u,s)<3));
+  if(!ready.length){say("Need 3 unspent on someone with a skill under R3.");return typeof back==="function"?back():skillsHub(back);}
   choices(ready.map(u=>({list:true,label:u.name+" · "+u.unspent+" pts",fn:()=>{
     const pool=u.skills.filter(s=>SKILLS[s]&&skR(u,s)<3);
     choices(pool.map(s=>({list:true,label:(SKILLS[s].n)+" R"+skR(u,s)+" → R"+(skR(u,s)+1),fn:()=>{
@@ -1487,11 +1502,16 @@ function rankArts(back){
     }})).concat([{label:"Back",fn:()=>rankArts(back)}]));
   }})).concat([{label:"Back",fn:()=>skillsHub(back)}]));
 }
-function statsMenu(){
-  const m=mainU(); if(m.unspent<=0){say("No points.");return choices([{label:"Back",fn:hub}]);}
-  say("Unspent "+m.unspent);
+function statsMenu(who,back){
+  back=back||hub;
+  if(!who){
+    say("Spend whose points?");
+    return choices(G.roster.map(u=>({list:true,label:u.name+" · "+(u.unspent||0)+" pts",fn:()=>statsMenu(u,back)})).concat([{label:"Back",fn:back}]));
+  }
+  if((who.unspent||0)<=0){say(who.name+" has no points.");return choices([{label:"Back",fn:()=>statsMenu(null,back)}]);}
+  say(who.name+" unspent "+who.unspent);
   const keys=[["hpMax","HP"],["mpMax","MP"],["atk","ATK"],["def","DEF"],["spd","SPD"],["int","INT"],["spr","SPR"],["luk","LUK"]];
-  choices(keys.map(([k,l])=>({label:"+ "+l+" ("+(k==="mpMax"||k==="hpMax"?stat(m,k):m[k])+")",fn:()=>{m[k]+=k.includes("Max")?4:1; if(k==="hpMax")m.hp=stat(m,"hpMax"); if(k==="mpMax")m.mp=stat(m,"mpMax"); m.unspent--; save(); statsMenu();}})).concat([{label:"Back",fn:hub}]));
+  choices(keys.map(([k,l])=>({label:"+ "+l+" ("+(k==="mpMax"||k==="hpMax"?stat(who,k):who[k])+")",fn:()=>{who[k]+=k.includes("Max")?4:1; if(k==="hpMax")who.hp=stat(who,"hpMax"); if(k==="mpMax")who.mp=stat(who,"mpMax"); who.unspent--; save(); statsMenu(who,back);}})).concat([{label:"Back",fn:()=>statsMenu(null,back)}]));
 }
 function gearMenu(){
   ensurePots(); say("Stash "+G.stash.length+" · Pots "+potCount());
